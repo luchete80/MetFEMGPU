@@ -32,13 +32,13 @@ SET(EXES
 
 include_directories(${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 
-add_executable(WeldFormGPU
+add_executable(MetFEMGPU
                         # WeldFormGPU.cu
                         # Domain.cpp 
 													# Output.cpp
 													# Vector.cpp
                           # Mesh.cpp
-                          
+                          main.cu
 													cuda/Domain_d.cu
                           cuda/cudautils.cu
 
