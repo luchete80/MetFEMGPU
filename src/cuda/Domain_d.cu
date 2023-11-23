@@ -108,11 +108,11 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
 		std::vector <int> n;
     if (m_dim == 2) {
 			n.resize(4);
+      int ei = 0;
       for (int ey = 0; ey < nel[1];ey++){
-
         for (int ex = 0; ex < nel[0];ex++){
         int iv[4];
-        iv[0] = (nel[0]+1)*ey + ex;        iv[1] = (nel[0]+1)*ey + ex+1;
+        elnod_h[ei] = (nel[0]+1)*ey + ex;        iv[ei+1] = (nel[0]+1)*ey + ex+1;
         iv[2] = (nel[0]+1)*(ey+1) + ex+1;        iv[3] = (nel[0]+1)*(ey+1) + ex;
         // cout << i[]
 						// n[0]= m_node[iv[0]];
