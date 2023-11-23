@@ -1,5 +1,7 @@
 #include "Domain_d.cuh"
 #include <iostream>
+#include <vector>
+
 using namespace std;
 
 namespace MetFEM {
@@ -46,48 +48,46 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
     // write (*,*) "Creating Mesh ...", "Elements ", neL.y, ", ",neL.z
   int nc = (nel[0] +1) * (nel[1]+1) * (nel[2]+1);
   int ne = nel[0]*nel[1]*nel[2];
-  //thisAllocateNodes((neL.x +1) * (nel[1]+1) * (nel[2]+1));
+  //thisAllocateNodes((nel[0] +1) * (nel[1]+1) * (nel[2]+1));
     // print *, "Element count in XYZ: ", nel(:)
     // write (*,*) "Box Node count ", node_count
 
 	this->SetDimension(nc,ne);	 //AFTER CREATING DOMAIN
   //SPH::Domain	dom;
 	//double3 *x =  (double3 *)malloc(dom.Particles.size());
-	double3 *x =  new double3 [m_node_count];
-	for (int i=0;i<dom.Particles.size();i++){
-		//cout <<"i; "<<i<<endl;
-		//x[i] = make_double3(dom.Particles[i]->x);
-		x[i] = make_double3(double(dom.Particles[i]->x(0)), double(dom.Particles[i]->x(1)), double(dom.Particles[i]->x(2)));
-	}
-	int size = dom.Particles.size() * sizeof(double3);
+	double3 *x_H =  new double3 [m_node_count];
+
+
+	//int size = dom.Particles.size() * sizeof(double3);
 	cout << "Copying to device..."<<endl;
-	cudaMemcpy(this->x, x, size, cudaMemcpyHostToDevice);    
     
     // write (*,*) "xp ", Xp(:)    
-    
+    int nn = 0;
     if (m_dim == 2) {
     cout << "Box Particle Count is " << m_node_count <<endl;
     p = 1;
-      Xp.y = V(1);
+      Xp.y = V.y;
       for (int j = 0; j < (nel[1] +1);j++){
-        Xp.x = V(0);
-        for (int i = 0; i < (neL.x +1);i++){
-					m_node.push_back(new Node(Xp));
+        Xp.x = V.x;
+        for (int i = 0; i < (nel[0] +1);i++){
+					//m_node.push_back(new Node(Xp));
+					x_H[nn] = Xp;
+					nn++;
           //nod%x(p,:) = Xp(:);
-          cout << "node " << p <<"X: "<<Xp<<endl;
+          cout << "node " << p <<"X: "<<Xp.x<<"Y: "<<Xp.y<<"Z: "<<Xp.z<<endl;
           p++;
           Xp.x = Xp.x + 2 * r;
         }
         Xp.y = Xp.y + 2 * r;
       }// 
-      Xp(2) = Xp(2) + 2 * r;
+      Xp.z = Xp.z + 2 * r;
 
-    cout <<"m_node size"<<m_node.size()<<endl;
+    //cout <<"m_node size"<<m_node.size()<<endl;
     } else {
       // p = 1
       // k = 1; Xp(3) = V(3)
       // do while (k <= (nel(3) +1))
-        // j = 1;         Xp(2) = V.z
+        // j = 1;         Xp.z = V.z
         // do while (j <= (neL.z +1))
           // i = 1
           // Xp.y = V(1)
@@ -98,14 +98,16 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
             // Xp.y = Xp.y + 2 * r
             // i = i +1
           // end do
-          // Xp(2) = Xp(2) + 2 * r
+          // Xp.z = Xp.z + 2 * r
           // j = j +1
         // end do 
         // Xp(3) = Xp(3) + 2 * r
         // k = k + 1
       // end do    
 		}//if dim
-    
+
+		cudaMemcpy(this->x, x_H, m_node_count, cudaMemcpyHostToDevice);    
+
     // !! ALLOCATE ELEMENTS
     // !! DIMENSION = 2
     int gp = 1;
@@ -120,29 +122,31 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
       // end if 
       // call AllocateElements(neL.y * neL.z*nel(3),gp) 
     }
+
+		unsigned int *elnod_h = new unsigned int [m_elem_count * nodxelem]; //Flattened
     
 		int ex, ey, ez;
-		
+		std::vector <int> n;
     if (m_dim == 2) {
 			n.resize(4);
       for (int ey = 0; ey < nel[1];ey++){
 
-           for (int ex = 0; ex < neL.x;ex++){
+        for (int ex = 0; ex < nel[0];ex++){
         int iv[4];
-        iv[0] = (neL.x+1)*ey + ex;        iv[1] = (neL.x+1)*ey + ex+1;
-        iv[2] = (neL.x+1)*(ey+1) + ex+1;        iv[3] = (neL.x+1)*(ey+1) + ex;
+        iv[0] = (nel[0]+1)*ey + ex;        iv[1] = (nel[0]+1)*ey + ex+1;
+        iv[2] = (nel[0]+1)*(ey+1) + ex+1;        iv[3] = (nel[0]+1)*(ey+1) + ex;
         // cout << i[]
-						n[0]= m_node[iv[0]];
-						n[1]= m_node[(neL.x+1)*ey + ex+1];
-						n[2]= m_node[(neL.x+1)*(ey+1)+ex+1];
-						n[3]= m_node[(neL.x+1)*(ey+1)+ex];
-            cout << "Nel x : "<<neL.x<<endl;
+						// n[0]= m_node[iv[0]];
+						// n[1]= m_node[(nel[0]+1)*ey + ex+1];
+						// n[2]= m_node[(nel[0]+1)*(ey+1)+ex+1];
+						// n[3]= m_node[(nel[0]+1)*(ey+1)+ex];
+            cout << "Nel x : "<<nel[0]<<endl;
            cout << "nodes "<<endl;
            for (int i=0;i<4;i++)cout << iv[i]<<", ";
-						 m_element.push_back(new El4N2DPE(n));
-																							// m_node[(neL.x+1)*ey + ex+1],
-																							// m_node[(neL.x+1)*(ey+1)+ex+1],
-																							// m_node[(neL.x+1)*(ey+1)+ex]
+						 //m_element.push_back(new El4N2DPE(n));
+																							// m_node[(nel[0]+1)*ey + ex+1],
+																							// m_node[(nel[0]+1)*(ey+1)+ex+1],
+																							// m_node[(nel[0]+1)*(ey+1)+ex]
 																							// );
               //elem%elnod(i,:)=[(neL.y+1)*ey + ex+1,(neL.y+1)*ey + ex+2,(neL.y+1)*(ey+1)+ex+2,(neL.y+1)*(ey+1)+ex+1]         
               //print *, "Element ", i , "Elnod", elem%elnod(i,:) 
@@ -198,6 +202,8 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
     // print *, "Total Mass: ", tot_mass
     
     // call SearchNodelem
+		
+		delete [] elnod_h;
 }
 
 

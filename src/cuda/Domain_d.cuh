@@ -14,6 +14,8 @@ protected:
 	int 						m_dim;
   int             m_node_count, m_elem_count;
 	
+	unsigned int 		*elnod;
+	
 	double3* 				x; //Vector is double
 	double3* 				v;
 	double3* 				a;
