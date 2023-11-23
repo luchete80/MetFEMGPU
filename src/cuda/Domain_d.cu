@@ -29,12 +29,15 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
     int p, nnodz;
     int nodxelem;
     int nel[3];
+    m_dim = 3;
+    if (L.z > 0.0) m_dim = 2;
+    
     
     nel[0] = (int)(L.x/(2.0*r));
     nel[1] = (int)(L.y/(2.0*r));
     cout << "Nel x: "<<nel[0]<<", y "<<nel[1]<<endl;
     if (m_dim == 2){
-      nel[2] = 0;
+      nel[2] = 1;
       nodxelem = 4;
     } else {
       nel[2] = (int)(L.z/(2.0*r));
@@ -53,6 +56,7 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
     // write (*,*) "Box Node count ", node_count
 
 	this->SetDimension(nc,ne);	 //AFTER CREATING DOMAIN
+  cout << "Mesh generated. Node count: " << nc<<". Element count: "<<ne<<endl;
   //SPH::Domain	dom;
 	//double3 *x =  (double3 *)malloc(dom.Particles.size());
 	double3 *x_H =  new double3 [m_node_count];
@@ -61,51 +65,26 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
 	//int size = dom.Particles.size() * sizeof(double3);
 	cout << "Copying to device..."<<endl;
     
-    // write (*,*) "xp ", Xp(:)    
-    int nn = 0;
-    if (m_dim == 2) {
     cout << "Box Particle Count is " << m_node_count <<endl;
-    p = 1;
+    p = 0;
+    for (int j = 0; j < (nel[1] +1);j++) {
       Xp.y = V.y;
       for (int j = 0; j < (nel[1] +1);j++){
         Xp.x = V.x;
         for (int i = 0; i < (nel[0] +1);i++){
 					//m_node.push_back(new Node(Xp));
-					x_H[nn] = Xp;
-					nn++;
+					x_H[p] = Xp;
           //nod%x(p,:) = Xp(:);
           cout << "node " << p <<"X: "<<Xp.x<<"Y: "<<Xp.y<<"Z: "<<Xp.z<<endl;
           p++;
-          Xp.x = Xp.x + 2 * r;
+          Xp.x = Xp.x + 2.0 * r;
         }
-        Xp.y = Xp.y + 2 * r;
+        Xp.y = Xp.y + 2.0 * r;
       }// 
       Xp.z = Xp.z + 2 * r;
 
     //cout <<"m_node size"<<m_node.size()<<endl;
-    } else {
-      // p = 1
-      // k = 1; Xp(3) = V(3)
-      // do while (k <= (nel(3) +1))
-        // j = 1;         Xp.z = V.z
-        // do while (j <= (neL.z +1))
-          // i = 1
-          // Xp.y = V(1)
-          // do while (i <= (neL.y +1))
-            // nod%x(p,:) = Xp(:)
-            // print *,"node ",p , "X: ",Xp(:)
-            // p = p + 1
-            // Xp.y = Xp.y + 2 * r
-            // i = i +1
-          // end do
-          // Xp.z = Xp.z + 2 * r
-          // j = j +1
-        // end do 
-        // Xp(3) = Xp(3) + 2 * r
-        // k = k + 1
-      // end do    
-		}//if dim
-
+    } 
 		cudaMemcpy(this->x, x_H, m_node_count, cudaMemcpyHostToDevice);    
 
     // !! ALLOCATE ELEMENTS
@@ -152,29 +131,49 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
               //print *, "Element ", i , "Elnod", elem%elnod(i,:) 
 					 }
       } 
-    } else {
-      // ez = 0
-      // i = 1
-      // nnodz = (neL.y+1)*(neL.z+1)
-      // print *, "Element Nodes at z ", nnodz
-      // do while ( ez < nel(3))
-        // ey = 0    
-        // do while ( ey < neL.z)
-            // ex = 0
-            // do while (ex < neL.y) 
-                // !elem%elnod(i,:)=[(neL.y+1)*(ey+1)+ex+2,(neL.y+1)*(ey+1)+ex+1,(neL.y+1)*ey + ex+1,(neL.y+1)*ey + ex+2]       
-                // elem%elnod(i,:) = [ nnodz*ez + (neL.y+1)*ey + ex+1,nnodz*ez + (neL.y+1)*ey + ex+2, &
-                                    // nnodz*ez + (neL.y+1)*(ey+1)+ex+2,nnodz*ez + (neL.y+1)*(ey+1)+ex+1, &
-                                    // nnodz*(ez + 1) + (neL.y+1)*ey + ex+1,nnodz*(ez + 1) + (neL.y+1)*ey + ex+2, &
-                                    // nnodz*(ez + 1) + (neL.y+1)*(ey+1)+ex+2,nnodz*(ez + 1)+ (neL.y+1)*(ey+1)+ex+1]
-                // print *, "Element ", i , "Elnod", elem%elnod(i,:) 
-                // i=i+1
-              // ex = ex + 1
-            // end do
-          // ey = ey + 1
-        // end do 
-        // ez = ez + 1
-      // end do !el z
+    } else { //dim: 3
+      int ei = 0;
+      int nnodz = (nel[0]+1)*(nel[1]+1);
+      for (int ez = 0; ez < nel[2];ez++)
+      for (int ey = 0; ey < nel[1];ey++){
+        for (int ex = 0; ex < nel[0];ex++){
+          
+          int iv[8];
+          int nb1 = nnodz*ez + (nel[0]+1)*ey + ex;
+          int nb2 = nnodz*ez + (nel[0]+1)*(ey+1) + ex;
+          elnod_h[ei  ] = nb1;
+          elnod_h[ei+1] = nb1+1;
+          elnod_h[ei+2] = nb2+1;
+          elnod_h[ei+3] = nb2;
+          elnod_h[ei+4] = nb1 + nnodz*(ez+1);
+          elnod_h[ei+5] = nb1 + nnodz*(ez+1) + 1;
+          elnod_h[ei+6] = nb2 + nnodz*(ez+1) + 1;
+          elnod_h[ei+7] = nb2 + nnodz*(ez+1);
+
+          // elem%elnod(i,:) = [ nnodz*ez + (nel(1)+1)*ey + ex+1,nnodz*ez + (nel(1)+1)*ey + ex+2, &
+                              // nnodz*ez + (nel(1)+1)*(ey+1)+ex+2,nnodz*ez + (nel(1)+1)*(ey+1)+ex+1, &
+                              // nnodz*(ez + 1) + (nel(1)+1)*ey + ex+1,nnodz*(ez + 1) + (nel(1)+1)*ey + ex+2, &
+                              // nnodz*(ez + 1) + (nel(1)+1)*(ey+1)+ex+2,nnodz*(ez + 1)+ (nel(1)+1)*(ey+1)+ex+1];
+        // cout << i[]
+						// n[0]= m_node[iv[0]];
+						// n[1]= m_node[(nel[0]+1)*ey + ex+1];
+						// n[2]= m_node[(nel[0]+1)*(ey+1)+ex+1];
+						// n[3]= m_node[(nel[0]+1)*(ey+1)+ex];
+            cout << "Nel x : "<<nel[0]<<endl;
+           cout << "nodes "<<endl;
+           
+           for (int i=0;i<4;i++)cout << iv[i]<<", ";
+           ei += nodxelem;
+						 //m_element.push_back(new El4N2DPE(n));
+																							// m_node[(nel[0]+1)*ey + ex+1],
+																							// m_node[(nel[0]+1)*(ey+1)+ex+1],
+																							// m_node[(nel[0]+1)*(ey+1)+ex]
+																							// );
+              //elem%elnod(i,:)=[(neL.y+1)*ey + ex+1,(neL.y+1)*ey + ex+2,(neL.y+1)*(ey+1)+ex+2,(neL.y+1)*(ey+1)+ex+1]         
+              //print *, "Element ", i , "Elnod", elem%elnod(i,:) 
+					 }
+      } 
+
 		}//if dim 
     
     // call AllocateDomain()
