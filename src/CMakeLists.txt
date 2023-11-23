@@ -1,7 +1,9 @@
+cmake_minimum_required(VERSION 3.2)
+
 SET(BUILD_GPU ON)
 
 
-project (gpuweldform LANGUAGES CXX CUDA)
+project (MetFEMGPU LANGUAGES CXX CUDA)
 project (testcuns LANGUAGES CXX CUDA)
 include_directories(${PROJECT_SOURCE_DIR})
 

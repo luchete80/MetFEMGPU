@@ -2,14 +2,17 @@
 #define _DOMAIN_CUH_
 
 #include <cuda.h>
+#include "cudautils.cuh"
 
 namespace MetFEM{
 class Domain_d {
 public:
 	void Domain_d::SetDimension(const int &node_count, const int &elem_count); //ELEM TYPE???
+  void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &r);
 
 protected:
 	int 						m_dim;
+  int             m_node_count, m_elem_count;
 	
 	double3* 				x; //Vector is double
 	double3* 				v;
