@@ -9,12 +9,14 @@ public:
 	void Domain_d::SetDimension(const int &node_count, const int &elem_count); //ELEM TYPE???
 
 protected:
-	double3* x; //Vector is double
-	double3* v;
-	double3* a;
-	double3* u;
+	int 						m_dim;
+	
+	double3* 				x; //Vector is double
+	double3* 				v;
+	double3* 				a;
+	double3* 				u;
 
-	double *p;
+	double 					*p;
 	
 	
 	
