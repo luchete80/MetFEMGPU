@@ -208,7 +208,7 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
 		delete [] elnod_h;
 }
 
-__device__ void Domain_d::calcDerivatives_FullInt () {
+__device__ void Domain_d::calcElemJAndDerivatives () {
   
   int e = threadIdx.x + blockDim.x*blockIdx.x;
   if (e < m_elem_count) {
@@ -219,6 +219,7 @@ __device__ void Domain_d::calcDerivatives_FullInt () {
   // real(fp_kind), dimension(dim,nodxelem) :: dHrs !!! USED ONLY FOR SEVERAL GAUSS POINTS
   Matrix dHrs(m_dim, m_nodxelem); /// IN ELEM_TYPE
   Matrix x2(m_nodxelem, m_dim);
+	Matrix jacob(m_dim, m_dim);
   // real(fp_kind), dimension(nodxelem,dim) :: x2
   // real(fp_kind), dimension(dim,dim) :: test
   // real(fp_kind), dimension(dim, dim*nodxelem) :: temph
@@ -237,8 +238,8 @@ __device__ void Domain_d::calcDerivatives_FullInt () {
         // x2(i,:)=nod%x(elem%elnod(e,i),:)
     // end do
     
-    // if (elem%gausspc(e) .eq. 1) then      
-    
+    if (m_gp_count == 1 ) {      
+			if (m_dim == 2) {
       // if (dim .eq. 2) then 
         // !dHdrs [-1,1,1,-1;  -1.-1,1,1] x X2
         // !! J = [
@@ -251,7 +252,7 @@ __device__ void Domain_d::calcDerivatives_FullInt () {
         // elem%jacob(e,gp,1,:) = -x2(1,:)+x2(2,:)+x2(3,:)-x2(4,:)
         // elem%jacob(e,gp,2,:) = -x2(1,:)-x2(2,:)+x2(3,:)+x2(4,:)
         // elem%jacob(e,gp,:,:) = 0.25*elem%jacob(e,gp,:,:)
-        // else !!!DIM 3
+			} else { //!!!DIM 3
           // !!!!! SETTING LIKE THIS AVOID MATMUL
           // elem%jacob(e,gp,1,:) = -x2(1,:)+x2(2,:)+x2(3,:)-x2(4,:)-x2(5,:)+x2(6,:)+x2(7,:)-x2(8,:)
           // elem%jacob(e,gp,2,:) = -x2(1,:)-x2(2,:)+x2(3,:)+x2(4,:)-x2(5,:)-x2(6,:)+x2(7,:)+x2(8,:)
@@ -263,17 +264,33 @@ __device__ void Domain_d::calcDerivatives_FullInt () {
           // ! dHrs(3,:)=[-1.0,-1.0,-1.0,-1.0, 1.0, 1.0, 1.0, 1.0]  
           // ! elem%jacob(e,gp,1,:) = matmul(dHrs,x2)
           // elem%jacob(e,gp,:,:) = 0.125*elem%jacob(e,gp,:,:)
-      // end if  !!!!DIM
+      } // end if  !!!!DIM
       // elem%detJ(e,gp) = det(elem%jacob(e,gp,:,:))
-    // else !!!!! GP > 1
-      // r = 1.0/sqrt(3.0);
+    } else { //!!!!! GP > 1
+			double gpc[8][3];
+      double r = 1.0/sqrt(3.0);
+			gpc[0][0] = -r; gpc[1][1] = -r;gpc[2][2] = -r;
+			gpc[1][0] =  r; gpc[1][1] = -r;gpc[2][2] = -r;
+			gpc[2][0] = -r; gpc[1][1] =  r;gpc[2][2] = -r;
+			gpc[3][0] =  r; gpc[1][1] =  r;gpc[2][2] = -r;
+			gpc[4][0] = -r; gpc[1][1] = -r;gpc[2][2] =  r;
+			gpc[5][0] =  r; gpc[1][1] = -r;gpc[2][2] =  r;
+			gpc[6][0] = -r; gpc[1][1] =  r;gpc[2][2] =  r;
+			gpc[7][0] =  r; gpc[1][1] =  r;gpc[2][2] =  r;
+			
+			//,:)=[-r,-r,-r];   gpc(2,:)=[ r,-r,-r];      gpc(3,:)=[-r, r,-r];      gpc(4,:)=[ r, r,-r]; !These are the 4 points for 2D full elem
       // gpc(1,:)=[-r,-r,-r];   gpc(2,:)=[ r,-r,-r];      gpc(3,:)=[-r, r,-r];      gpc(4,:)=[ r, r,-r]; !These are the 4 points for 2D full elem
       // gpc(5,:)=[-r,-r, r];   gpc(6,:)=[ r,-r, r];      gpc(7,:)=[-r, r, r];      gpc(8,:)=[ r, r, r];
     
       if (m_dim == 3) {
         for (int gp=0;gp<m_gp_count;gp++){
           
-          dHrs(0,0)=1.0; dHrs(1,1)=1.0;
+          dHrs(0,0)=-1.0*(1-gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,0)=-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,0)=-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1]);
+          dHrs(0,1)=     (1-gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,1)=-1.0*(1+gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,1)=-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1]);
+					
+					dHrs(0,2)=     (1+gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,2)=     (1+gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,2)=-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]);
+					dHrs(0,3)=     (1+gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,3)=     (1-gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,3)=-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]);
+					
           // dHrs(1,:)=[-1.0*(1-gpc(gp,2))*(1.0-gpc(gp,3)),     (1-gpc(gp,2))*(1.0-gpc(gp,3))&
                     // ,     (1+gpc(gp,2))*(1.0-gpc(gp,3)),-1.0*(1+gpc(gp,2))*(1.0-gpc(gp,3))&
                     // ,-1.0*(1-gpc(gp,2))*(1.0+gpc(gp,3)),     (1-gpc(gp,2))*(1.0+gpc(gp,3))&
@@ -293,6 +310,7 @@ __device__ void Domain_d::calcDerivatives_FullInt () {
           // !print *, "dhrs", dHrs 
           // !print *, "x2", x2 
           // elem%jacob(e,gp,:,:) = 0.125*matmul(dHrs,x2)
+					jacob = 0.125 * MatMul(dHrs,x2);
 // ! #if defined _PRINT_DEBUG_
           // ! print *, "jacob ", elem%jacob(e,gp,:,:)
 // ! #endif          
@@ -304,14 +322,19 @@ __device__ void Domain_d::calcDerivatives_FullInt () {
           // dHrs(1,:)=[-1.0*(1-gpc(gp,2)),     (1-gpc(gp,2))&
                     // ,     (1+gpc(gp,2)),-1.0*(1+gpc(gp,2))]
           // dHrs(2,:)=[-1.0*(1-gpc(gp,1)),-1.0*(1+gpc(gp,1))&
-                         // ,(1+gpc(gp,1)),     (1-gpc(gp,1))]                
-          
+                         // ,(1+gpc(gp,1)),     (1-gpc(gp,1))]  
+					for (int gp=0;gp<m_gp_count;gp++){										
+						dHrs(0,0)=-1.0*(1-gpc[gp][1]); dHrs(0,1)=     (1-gpc[gp][1]); dHrs(0,2)=     (1+gpc[gp][1]); dHrs(0,3)=-1.0*(1+gpc[gp][1]);
+						dHrs(1,0)=-1.0*(1-gpc[gp][0]); dHrs(1,1)=-1.0*(1+gpc[gp][0]); dHrs(1,2)=     (1+gpc[gp][0]); dHrs(1,3)=     (1-gpc[gp][0]);
+					}
           // elem%dHrs(e,gp,:,:) =  dHrs(:,:)         
           // !dHrs(2,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))]         
           // !dHrs(3,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))] 
           // !print *, "dhrs", dHrs 
           // !print *, "x2", x2 
           // elem%jacob(e,gp,:,:) = 0.25*matmul(dHrs,x2)
+					jacob = 0.25 * MatMul(dHrs,x2);
+					
 // ! #if defined _PRINT_DEBUG_
           // !print *, "jacob ", elem%jacob(e,gp,:,:)
 // ! #endif          
@@ -319,13 +342,18 @@ __device__ void Domain_d::calcDerivatives_FullInt () {
           // !print *, "detJ ", elem%detJ(e,gp)
         // end do !gp      
         
-      }
-    // end if !!gp ==1
+      }//dim 2 (gp>1)
+    }// end if !!gp ==1
 // ! #if defined _PRINT_DEBUG_
     // !print *, "jacob ", elem%jacob(e,gp,:,:)
 // ! #endif    
   // end do !element
   }
+}
+
+
+__global__ void calcElemJAndDerivatives(Domain_d *dom_d){
+		dom_d->calcElemJAndDerivatives();
 }
 
 

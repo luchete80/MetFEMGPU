@@ -11,7 +11,7 @@ public:
   void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &r);
   
   __device__ void calcElemJacobian ();
-  __device__ void calcDerivatives_FullInt();
+  __device__ void calcElemJAndDerivatives/*_FullInt*/();
 
 protected:
 	int 						m_dim;
@@ -41,6 +41,8 @@ protected:
 	double					deltatint;			//Initial Time Step
 	
 };
+
+__global__ void calcElemJAndDerivatives(Domain_d *dom_d);
 
 }; //Namespace
 
