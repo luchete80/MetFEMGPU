@@ -217,7 +217,8 @@ __device__ void Domain_d::calcDerivatives_FullInt () {
   // ! !rg=gauss[ig]
   // ! !sg=gauss[jg]
   // real(fp_kind), dimension(dim,nodxelem) :: dHrs !!! USED ONLY FOR SEVERAL GAUSS POINTS
-  Matrix dHrs; /// IN ELEM_TYPE
+  Matrix dHrs(m_dim, m_nodxelem); /// IN ELEM_TYPE
+  Matrix x2(m_nodxelem, m_dim);
   // real(fp_kind), dimension(nodxelem,dim) :: x2
   // real(fp_kind), dimension(dim,dim) :: test
   // real(fp_kind), dimension(dim, dim*nodxelem) :: temph
@@ -270,8 +271,9 @@ __device__ void Domain_d::calcDerivatives_FullInt () {
       // gpc(5,:)=[-r,-r, r];   gpc(6,:)=[ r,-r, r];      gpc(7,:)=[-r, r, r];      gpc(8,:)=[ r, r, r];
     
       if (m_dim == 3) {
-        for (int gp=0;gp<gp_count;gp++){
-
+        for (int gp=0;gp<m_gp_count;gp++){
+          
+          dHrs(0,0)=1.0; dHrs(1,1)=1.0;
           // dHrs(1,:)=[-1.0*(1-gpc(gp,2))*(1.0-gpc(gp,3)),     (1-gpc(gp,2))*(1.0-gpc(gp,3))&
                     // ,     (1+gpc(gp,2))*(1.0-gpc(gp,3)),-1.0*(1+gpc(gp,2))*(1.0-gpc(gp,3))&
                     // ,-1.0*(1-gpc(gp,2))*(1.0+gpc(gp,3)),     (1-gpc(gp,2))*(1.0+gpc(gp,3))&

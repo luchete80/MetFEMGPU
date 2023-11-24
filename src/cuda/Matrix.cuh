@@ -33,7 +33,10 @@ class Matrix {
 public: 
   __spec Matrix(){}
   __spec Matrix(const int &row, const int &col);
-
+  
+  __spec double & getVal(const int &a, const int &b);
+  __spec double & operator()(const int &a, const int &b);
+  
   __spec ~Matrix(){cudaFree (m_data);}
 
 	double *m_data;
@@ -51,15 +54,22 @@ __spec Matrix::Matrix(const int &row, const int &col) {
 
 __spec Matrix MatMul(Matrix &A, Matrix &B){
   Matrix ret(A.m_row,B.m_col);
-  for (int i = 0; i<A.m_row; i++){
-  for (int j = 0; j<A.m_col; j++){
-    ret.m_data[i*] += A.m_data[] * B.m_data[];
-  }
-  }
+  for (int i = 0; i<A.m_row; i++)
+    for (int j = 0; j<A.m_col; j++)
+      for (int k = 0; k<A.m_col; k++)
+        ret.m_data[i * A.m_row + j] += A.m_data[i * A.m_row + k] * B.m_data[k * B.m_row + j ];
+  
+  
   
   return ret;
 }
 
-
+  __spec double & Matrix::getVal(const int &a, const int &b){
+    return m_data[m_row*a+b];
+  }
+  
+  __spec double & Matrix::operator()(const int &a, const int &b){
+    return m_data[m_row*a+b];
+  }
 
 #endif

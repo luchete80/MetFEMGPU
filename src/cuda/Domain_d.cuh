@@ -17,7 +17,7 @@ protected:
 	int 						m_dim;
   int             m_node_count, m_elem_count;
 	
-	unsigned int 		*elnod;
+	unsigned int 		*m_elnod;
 	
 	double3* 				x; //Vector is double
 	double3* 				v;
@@ -26,9 +26,9 @@ protected:
 
 	double 					*p;
   
-  bool            red_int;  //Reduced integration, 1 GAUSS POINT
-  int             gp_count; //Assuming constant gauss points
-  int             nodxelem;
+  bool            m_red_int;  //Reduced integration, 1 GAUSS POINT
+  int             m_gp_count; //Assuming constant gauss points
+  int             m_nodxelem;
 	
   //Updated lagrangian formulation
   //real(fp_kind), dimension(:,:,:,:), allocatable :: BL,BNL, jacob, dHxy,dHxy_detJ, dHxy0,math, dHrs !!!DIM: e,gp,,:,:, is it necesary to store dHrs??? is only because is used twice, at J and dHxy
