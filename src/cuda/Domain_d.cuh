@@ -32,7 +32,7 @@ protected:
 	
   //Updated lagrangian formulation
   //real(fp_kind), dimension(:,:,:,:), allocatable :: BL,BNL, jacob, dHxy,dHxy_detJ, dHxy0,math, dHrs !!!DIM: e,gp,,:,:, is it necesary to store dHrs??? is only because is used twice, at J and dHxy
-  double         *dHxy_detJ, ; //
+  double         *dHxy_detJ ; //
 	
 	
 	double					Time;    				//Current time of simulation at each solving step

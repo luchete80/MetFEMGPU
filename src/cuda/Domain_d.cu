@@ -2,6 +2,9 @@
 #include <iostream>
 #include <vector>
 
+#include "tensor.cuh"
+#include "Matrix.cuh"
+
 using namespace std;
 
 namespace MetFEM {
@@ -205,7 +208,7 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
 		delete [] elnod_h;
 }
 
-__device__ void Domain::calcDerivatives_FullInt () {
+__device__ void Domain_d::calcDerivatives_FullInt () {
   
   int e = threadIdx.x + blockDim.x*blockIdx.x;
   if (e < m_elem_count) {
@@ -214,7 +217,7 @@ __device__ void Domain::calcDerivatives_FullInt () {
   // ! !rg=gauss[ig]
   // ! !sg=gauss[jg]
   // real(fp_kind), dimension(dim,nodxelem) :: dHrs !!! USED ONLY FOR SEVERAL GAUSS POINTS
-  double dHrs[dim][nodxelem]; /// IN ELEM_TYPE
+  Matrix dHrs; /// IN ELEM_TYPE
   // real(fp_kind), dimension(nodxelem,dim) :: x2
   // real(fp_kind), dimension(dim,dim) :: test
   // real(fp_kind), dimension(dim, dim*nodxelem) :: temph
@@ -266,7 +269,7 @@ __device__ void Domain::calcDerivatives_FullInt () {
       // gpc(1,:)=[-r,-r,-r];   gpc(2,:)=[ r,-r,-r];      gpc(3,:)=[-r, r,-r];      gpc(4,:)=[ r, r,-r]; !These are the 4 points for 2D full elem
       // gpc(5,:)=[-r,-r, r];   gpc(6,:)=[ r,-r, r];      gpc(7,:)=[-r, r, r];      gpc(8,:)=[ r, r, r];
     
-      if (m_dim .eq. 3) {
+      if (m_dim == 3) {
         for (int gp=0;gp<gp_count;gp++){
 
           // dHrs(1,:)=[-1.0*(1-gpc(gp,2))*(1.0-gpc(gp,3)),     (1-gpc(gp,2))*(1.0-gpc(gp,3))&
