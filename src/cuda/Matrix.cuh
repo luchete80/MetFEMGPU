@@ -37,11 +37,15 @@ public:
   
   __spec double & getVal(const int &a, const int &b);
   __spec double & operator()(const int &a, const int &b);
+	
+	__spec void Print();
   
   __spec ~Matrix(){/*cudaFree (m_data);*/}
+	
+	__spec double calcDet();
 
 	double *m_data;
-  int m_row, m_col;
+  int m_row, m_col, m_dim;
 
 };
 
@@ -49,6 +53,7 @@ public:
 __spec Matrix::Matrix(const int &row, const int &col) {
   m_row = row;
   m_col = col;
+	if (m_row == m_col) m_dim = m_row;
   cudaMalloc((void**)&m_data, row * col * sizeof(double));
   for (int i=0;i<row*col;i++) m_data[i] = 0.0;
 }
@@ -78,6 +83,17 @@ __spec Matrix MatMul(Matrix &A, Matrix &B){
   for (int i=0;i<A.m_row*A.m_col;i++) ret.m_data[i] = A.m_data[i] * c;
 	return ret;
 }
+
+	__spec void Matrix::Print() {
+
+  for (int i=0;i<m_row*m_col;i++) {
+		for (int j=0;j<m_col*m_col;j++) 
+			printf("%lf ", getVal(i,j)) ;
+		printf("\n");
+	}
+
+}
+
 
 
 // subroutine M33INV (A, AINV, OK_FLAG)
@@ -126,7 +142,8 @@ __spec Matrix MatMul(Matrix &A, Matrix &B){
 
 // end subroutine M33INV
 
-// function det (a)
+__spec double Matrix::calcDet (){
+	double ret = 0.0;
   // real(fp_kind), dimension(dim,dim), intent (in) :: a 
   // real(fp_kind) :: det
   // if (dim .eq. 2) then
@@ -139,7 +156,20 @@ __spec Matrix MatMul(Matrix &A, Matrix &B){
         // + A(1,3)*A(2,1)*A(3,2)  &
         // - A(1,3)*A(2,2)*A(3,1)  
   // end if
-// end function
+	if (m_dim == 2) {
+		ret = getVal(0,0) * getVal(1,1) - getVal(0,1) * getVal(1,0);
+	} else if (m_dim ==3) {
+		ret =   getVal(0,0) * getVal(1,1) * getVal(2,2)
+          - getVal(0,0) * getVal(1,2) * getVal(2,1)
+					- getVal(0,1) * getVal(1,0) * getVal(2,2)
+					+ getVal(0,1) * getVal(1,2) * getVal(2,0)
+          + getVal(0,2) * getVal(1,0) * getVal(2,1)
+					- getVal(0,2) * getVal(1,1) * getVal(2,0);
+
+
+	}
+	return ret;
+}
 
 // function invmat (a)
   // real(fp_kind), dimension(dim,dim), intent (in) :: a 

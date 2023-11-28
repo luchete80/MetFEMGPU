@@ -88,7 +88,7 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
 
     //cout <<"m_node size"<<m_node.size()<<endl;
     } 
-		cudaMemcpy(this->x, x_H, m_node_count, cudaMemcpyHostToDevice);    
+		cudaMemcpy(this->x, x_H, sizeof(double) * m_node_count, cudaMemcpyHostToDevice);    
 
     // !! ALLOCATE ELEMENTS
     // !! DIMENSION = 2
@@ -115,23 +115,13 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
       for (int ey = 0; ey < nel[1];ey++){
         for (int ex = 0; ex < nel[0];ex++){
         int iv[4];
-        elnod_h[ei] = (nel[0]+1)*ey + ex;        iv[ei+1] = (nel[0]+1)*ey + ex+1;
-        iv[2] = (nel[0]+1)*(ey+1) + ex+1;        iv[3] = (nel[0]+1)*(ey+1) + ex;
-        // cout << i[]
-						// n[0]= m_node[iv[0]];
-						// n[1]= m_node[(nel[0]+1)*ey + ex+1];
-						// n[2]= m_node[(nel[0]+1)*(ey+1)+ex+1];
-						// n[3]= m_node[(nel[0]+1)*(ey+1)+ex];
-            cout << "Nel x : "<<nel[0]<<endl;
-           cout << "nodes "<<endl;
-           for (int i=0;i<4;i++)cout << iv[i]<<", ";
-						 //m_element.push_back(new El4N2DPE(n));
-																							// m_node[(nel[0]+1)*ey + ex+1],
-																							// m_node[(nel[0]+1)*(ey+1)+ex+1],
-																							// m_node[(nel[0]+1)*(ey+1)+ex]
-																							// );
-              //elem%elnod(i,:)=[(neL.y+1)*ey + ex+1,(neL.y+1)*ey + ex+2,(neL.y+1)*(ey+1)+ex+2,(neL.y+1)*(ey+1)+ex+1]         
-              //print *, "Element ", i , "Elnod", elem%elnod(i,:) 
+        elnod_h[ei  ] = (nel[0]+1)*ey + ex;        elnod_h[ei+1] = (nel[0]+1)*ey + ex+1;
+        elnod_h[ei+2] = (nel[0]+1)*(ey+1) + ex+1;  elnod_h[ei+3] = (nel[0]+1)*(ey+1) + ex;
+			
+				 for (int i=0;i<nodxelem;i++)cout << elnod_h[ei+i]<<", ";
+					cout << "Nel x : "<<nel[0]<<endl;
+					cout << "nodes "<<endl;
+					ei += nodxelem;
 					 }
       } 
     } else { //dim: 3
@@ -165,7 +155,7 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
             cout << "Nel x : "<<nel[0]<<endl;
            cout << "nodes "<<endl;
            
-           for (int i=0;i<4;i++)cout << iv[i]<<", ";
+           for (int i=0;i<nodxelem;i++)cout << elnod_h[ei+i]<<", ";
            ei += nodxelem;
 						 //m_element.push_back(new El4N2DPE(n));
 																							// m_node[(nel[0]+1)*ey + ex+1],
@@ -178,6 +168,8 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
       } 
 
 		}//if dim 
+		
+		cudaMemcpy(this->m_elnod, elnod_h, sizeof(double) * m_elem_count * nodxelem, cudaMemcpyHostToDevice);    
     
     // call AllocateDomain()
     // i = 1
@@ -209,8 +201,10 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
 }
 
 __device__ void Domain_d::calcElemJAndDerivatives () {
+	printf("calculating\n");
   
   int e = threadIdx.x + blockDim.x*blockIdx.x;
+	printf ("e %d, elem_count %d\n",e,m_elem_count);
   if (e < m_elem_count) {
     
   // integer :: e
@@ -237,7 +231,7 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
         // !print *, "elnod " , elem%elnod(e,i)
         // x2(i,:)=nod%x(elem%elnod(e,i),:)
     // end do
-    
+    printf("Calculating jacobian\n");
     if (m_gp_count == 1 ) {      
 			if (m_dim == 2) {
       // if (dim .eq. 2) then 
@@ -335,6 +329,8 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           // elem%jacob(e,gp,:,:) = 0.25*matmul(dHrs,x2)
 					jacob = 0.25 * MatMul(dHrs,x2);
 					
+					
+					jacob.Print();
 // ! #if defined _PRINT_DEBUG_
           // !print *, "jacob ", elem%jacob(e,gp,:,:)
 // ! #endif          
@@ -352,7 +348,8 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
 }
 
 
-__global__ void calcElemJAndDerivatives(Domain_d *dom_d){
+__global__ void calcElemJAndDerivKernel(Domain_d *dom_d){
+		printf("calc derivs\n");
 		dom_d->calcElemJAndDerivatives();
 }
 

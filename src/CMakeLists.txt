@@ -41,6 +41,7 @@ add_executable(MetFEMGPU
                           main.cu
 													cuda/Domain_d.cu
                           cuda/cudautils.cu
+													cuda/Solver.cu
 
               )
 
