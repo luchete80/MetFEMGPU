@@ -215,8 +215,11 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
   // real(fp_kind), dimension(dim,m_nodxelem) :: dHrs !!! USED ONLY FOR SEVERAL GAUSS POINTS
 	printf ("m_dim %d, nod x elem %d", m_dim, m_nodxelem);
   Matrix dHrs(m_dim, m_nodxelem); /// IN ELEM_TYPE
-   Matrix x2(m_nodxelem, m_dim);
-	 Matrix jacob(m_dim, m_dim);
+	printf("test %lf",dHrs.m_data[0]);
+	//double dHrs_fl[m_dim* m_nodxelem];
+	//dHrs.Print();
+   //Matrix x2(m_nodxelem, m_dim);
+	 //Matrix jacob(m_dim, m_dim);
 	printf ("Matrices created\n");
   // real(fp_kind), dimension(m_nodxelem,dim) :: x2
   // real(fp_kind), dimension(dim,dim) :: test

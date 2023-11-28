@@ -91,7 +91,7 @@ add_executable(MetFEMGPU
 
 #add_subdirectory (cuda)
 
-#TARGET_LINK_LIBRARIES (gpuweldform cuda)
+TARGET_LINK_LIBRARIES (MetFEMGPU cuda cudadevrt)
 
 #FOREACH(var ${EXES})
 #    ADD_EXECUTABLE        (${var} "${var}.cpp" #

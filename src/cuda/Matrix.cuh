@@ -40,7 +40,7 @@ public:
 	
 	__spec void Print();
   
-  __spec ~Matrix(){cudaFree (m_data);}
+  __spec ~Matrix(){/*cudaFree (m_data);*/}
 	
 	__spec double calcDet();
 
@@ -55,7 +55,7 @@ __spec Matrix::Matrix(const int &row, const int &col) {
   m_col = col;
 	if (m_row == m_col) m_dim = m_row;
   cudaMalloc((void**)&m_data, row * col * sizeof(double));
-  for (int i=0;i<row*col;i++) m_data[i] = 0.0;
+  //for (int i=0;i<row*col;i++) m_data[i] = 0.0;
 }
 
 __spec Matrix MatMul(Matrix &A, Matrix &B){
@@ -85,12 +85,12 @@ __spec Matrix MatMul(Matrix &A, Matrix &B){
 }
 
 	__spec void Matrix::Print() {
-
-  for (int i=0;i<m_row*m_col;i++) {
-		for (int j=0;j<m_col*m_col;j++) 
-			printf("%lf ", getVal(i,j)) ;
-		printf("\n");
-	}
+	printf("%lf ",m_data[0]);
+  // for (int i=0;i<m_row*m_col;i++) {
+		// for (int j=0;j<m_col*m_col;j++) 
+			// printf("%lf ", getVal(i,j)) ;
+		// printf("\n");
+	// }
 
 }
 
