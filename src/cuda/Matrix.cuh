@@ -40,7 +40,7 @@ public:
 	
 	__spec void Print();
   
-  __spec ~Matrix(){/*cudaFree (m_data);*/}
+  __spec ~Matrix(){cudaFree (m_data);}
 	
 	__spec double calcDet();
 
