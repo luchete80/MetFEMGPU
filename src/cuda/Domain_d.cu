@@ -33,7 +33,7 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
 
     int nel[3];
     m_dim = 3;
-    if (L.z > 0.0) m_dim = 2;
+    if (L.z > 0.0) m_dim = 3;
     
     
     nel[0] = (int)(L.x/(2.0*r));
@@ -60,6 +60,7 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
 
 	this->SetDimension(nc,ne);	 //AFTER CREATING DOMAIN
   cout << "Mesh generated. Node count: " << nc<<". Element count: "<<ne<<endl;
+  cout << "Dimension is: "<<m_dim<<endl;
   //SPH::Domain	dom;
 	//double3 *x =  (double3 *)malloc(dom.Particles.size());
 	double3 *x_H =  new double3 [m_node_count];
@@ -169,6 +170,7 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
 
 		}//if dim 
 		
+    cudaMalloc((void **)&m_elnod, m_elem_count * m_nodxelem * sizeof (double3));
 		cudaMemcpy(this->m_elnod, elnod_h, sizeof(double) * m_elem_count * m_nodxelem, cudaMemcpyHostToDevice);    
     
     // call AllocateDomain()
@@ -208,149 +210,131 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
 
 	//printf ("e %d, elem_count %d\n",m_elem_count);
   if (e < 1) {
-  printf ("INSIDE!\n");
   // integer :: e
   // ! !rg=gauss[ig]
   // ! !sg=gauss[jg]
   // real(fp_kind), dimension(dim,m_nodxelem) :: dHrs !!! USED ONLY FOR SEVERAL GAUSS POINTS
 	printf ("m_dim %d, nod x elem %d", m_dim, m_nodxelem);
   Matrix dHrs(m_dim, m_nodxelem); /// IN ELEM_TYPE
-	printf("test %lf",dHrs.m_data[0]);
+	//printf("test %lf",dHrs.m_data[0]);
 	//double dHrs_fl[m_dim* m_nodxelem];
-	//dHrs.Print();
-   //Matrix x2(m_nodxelem, m_dim);
-	 //Matrix jacob(m_dim, m_dim);
+	dHrs.Print();
+   Matrix x2(m_nodxelem, m_dim);
+	 Matrix jacob(m_dim, m_dim);
 	printf ("Matrices created\n");
-  // real(fp_kind), dimension(m_nodxelem,dim) :: x2
-  // real(fp_kind), dimension(dim,dim) :: test
-  // real(fp_kind), dimension(dim, dim*m_nodxelem) :: temph
-  
-  // integer :: i,j,k, gp
-  // real(fp_kind):: r   !!! USED ONLY FOR SEVERAL GAUSS POINTS
-  // real(fp_kind), dimension(8,3):: gpc !!! gauss point coordinates, r,s,t
-  
-  // gp = 1
-  // do e=1, elem_count
-// ! #ifdef _PRINT_DEBUG_  
-    // ! print *, "el ", e 
-// ! #endif    
-    // do i=1,m_nodxelem
-        // !print *, "elnod " , elem%elnod(e,i)
-        // x2(i,:)=nod%x(elem%elnod(e,i),:)
-    // end do
-    // printf("Calculating jacobian\n");
-    // if (m_gp_count == 1 ) {      
-			// if (m_dim == 2) {
-      // // if (dim .eq. 2) then 
-        // // !dHdrs [-1,1,1,-1;  -1.-1,1,1] x X2
-        // // !! J = [
-        // // !! dx/dr dy/dr
-        // // !! dx/ds dy/dx ]
-        // // !!! THIS IS TO AVOID MATMUL
-        // // ! print *, "nodes X ", x2(:,1)
-        // // ! print *, "nodes Y ", x2(:,2)
+
+      // do i=1,nodxelem
+          // !print *, "elnod " , elem%elnod(e,i)
+          // x2(i,:)=nod%x(elem%elnod(e,i),:)
+      // end do
+  int nind = e * m_nodxelem;
+  for (int i=0;i<m_nodxelem;i++)
+    for (int d=0;d<m_dim;d++){
+      printf ("elnod %d, %lf %lf %lf \n",m_elnod[nind+i],x[m_elnod[nind+i]].x,x[m_elnod[nind+i]].y,x[m_elnod[nind+i]].z);
+      x2(i,0) = 0.0;
+      double test = x[m_elnod[nind+i]].x;
+      
+      //x2.Set(i,0,test);
+      //x2.Set(i,0,x[m_elnod[nind+i]].x);
+      // x2(i,1) = x[m_elnod[nind+i]].y;
+      // x2(i,2) = x[m_elnod[nind+i]].z;
+    }
+    printf("Calculating jacobian\n");
+    if (m_gp_count == 1 ) {      
+			if (m_dim == 2) {
+      // if (dim .eq. 2) then 
+        // !dHdrs [-1,1,1,-1;  -1.-1,1,1] x X2
+        // !! J = [
+        // !! dx/dr dy/dr
+        // !! dx/ds dy/dx ]
+        // !!! THIS IS TO AVOID MATMUL
+        // ! print *, "nodes X ", x2(:,1)
+        // ! print *, "nodes Y ", x2(:,2)
                 
-        // // elem%jacob(e,gp,1,:) = -x2(1,:)+x2(2,:)+x2(3,:)-x2(4,:)
-        // // elem%jacob(e,gp,2,:) = -x2(1,:)-x2(2,:)+x2(3,:)+x2(4,:)
-        // // elem%jacob(e,gp,:,:) = 0.25*elem%jacob(e,gp,:,:)
-			// } else { //!!!DIM 3
-          // // !!!!! SETTING LIKE THIS AVOID MATMUL
-          // // elem%jacob(e,gp,1,:) = -x2(1,:)+x2(2,:)+x2(3,:)-x2(4,:)-x2(5,:)+x2(6,:)+x2(7,:)-x2(8,:)
-          // // elem%jacob(e,gp,2,:) = -x2(1,:)-x2(2,:)+x2(3,:)+x2(4,:)-x2(5,:)-x2(6,:)+x2(7,:)+x2(8,:)
-          // // elem%jacob(e,gp,3,:) = -x2(1,:)-x2(2,:)-x2(3,:)-x2(4,:)+x2(5,:)+x2(6,:)+x2(7,:)+x2(8,:)
-          // // !elem%jacob(e,gp,2,:) = [-x2(1,2),-x2(2,2), x2(3,2), x2(4,2),-x2(5,2),-x2(6,2), x2(7,2), x2(8,2)]
-          // // !elem%jacob(e,gp,3,:) = [-x2(1,3),-x2(2,3), x2(3,3), x2(4,3),-x2(5,3),-x2(6,3), x2(7,3), x2(8,3)]
-          // // ! dHrs(1,:)=[-1.0, 1.0, 1.0,-1.0,-1.0, 1.0, 1.0,-1.0] AND THIS IS dHrs*x2
-          // // ! dHrs(2,:)=[-1.0,-1.0, 1.0, 1.0,-1.0,-1.0, 1.0, 1.0]       
-          // // ! dHrs(3,:)=[-1.0,-1.0,-1.0,-1.0, 1.0, 1.0, 1.0, 1.0]  
-          // // ! elem%jacob(e,gp,1,:) = matmul(dHrs,x2)
-          // // elem%jacob(e,gp,:,:) = 0.125*elem%jacob(e,gp,:,:)
-      // } // end if  !!!!DIM
-      // // elem%detJ(e,gp) = det(elem%jacob(e,gp,:,:))
-    // } else { //!!!!! GP > 1
-			// double gpc[8][3];
-      // double r = 1.0/sqrt(3.0);
-			// gpc[0][0] = -r; gpc[1][1] = -r;gpc[2][2] = -r;
-			// gpc[1][0] =  r; gpc[1][1] = -r;gpc[2][2] = -r;
-			// gpc[2][0] = -r; gpc[1][1] =  r;gpc[2][2] = -r;
-			// gpc[3][0] =  r; gpc[1][1] =  r;gpc[2][2] = -r;
-			// gpc[4][0] = -r; gpc[1][1] = -r;gpc[2][2] =  r;
-			// gpc[5][0] =  r; gpc[1][1] = -r;gpc[2][2] =  r;
-			// gpc[6][0] = -r; gpc[1][1] =  r;gpc[2][2] =  r;
-			// gpc[7][0] =  r; gpc[1][1] =  r;gpc[2][2] =  r;
+        // elem%jacob(e,gp,1,:) = -x2(1,:)+x2(2,:)+x2(3,:)-x2(4,:)
+        // elem%jacob(e,gp,2,:) = -x2(1,:)-x2(2,:)+x2(3,:)+x2(4,:)
+        // elem%jacob(e,gp,:,:) = 0.25*elem%jacob(e,gp,:,:)
+			} else { //!!!DIM 3
+          // !!!!! SETTING LIKE THIS AVOID MATMUL
+          // elem%jacob(e,gp,1,:) = -x2(1,:)+x2(2,:)+x2(3,:)-x2(4,:)-x2(5,:)+x2(6,:)+x2(7,:)-x2(8,:)
+          // elem%jacob(e,gp,2,:) = -x2(1,:)-x2(2,:)+x2(3,:)+x2(4,:)-x2(5,:)-x2(6,:)+x2(7,:)+x2(8,:)
+          // elem%jacob(e,gp,3,:) = -x2(1,:)-x2(2,:)-x2(3,:)-x2(4,:)+x2(5,:)+x2(6,:)+x2(7,:)+x2(8,:)
+          // !elem%jacob(e,gp,2,:) = [-x2(1,2),-x2(2,2), x2(3,2), x2(4,2),-x2(5,2),-x2(6,2), x2(7,2), x2(8,2)]
+          // !elem%jacob(e,gp,3,:) = [-x2(1,3),-x2(2,3), x2(3,3), x2(4,3),-x2(5,3),-x2(6,3), x2(7,3), x2(8,3)]
+          // ! dHrs(1,:)=[-1.0, 1.0, 1.0,-1.0,-1.0, 1.0, 1.0,-1.0] AND THIS IS dHrs*x2
+          // ! dHrs(2,:)=[-1.0,-1.0, 1.0, 1.0,-1.0,-1.0, 1.0, 1.0]       
+          // ! dHrs(3,:)=[-1.0,-1.0,-1.0,-1.0, 1.0, 1.0, 1.0, 1.0]  
+          // ! elem%jacob(e,gp,1,:) = matmul(dHrs,x2)
+          // elem%jacob(e,gp,:,:) = 0.125*elem%jacob(e,gp,:,:)
+      } // end if  !!!!DIM
+      // elem%detJ(e,gp) = det(elem%jacob(e,gp,:,:))
+    } else { //!!!!! GP > 1
+			double gpc[8][3];
+      double r = 1.0/sqrt(3.0);
+			gpc[0][0] = -r; gpc[1][1] = -r;gpc[2][2] = -r;
+			gpc[1][0] =  r; gpc[1][1] = -r;gpc[2][2] = -r;
+			gpc[2][0] = -r; gpc[1][1] =  r;gpc[2][2] = -r;
+			gpc[3][0] =  r; gpc[1][1] =  r;gpc[2][2] = -r;
+			gpc[4][0] = -r; gpc[1][1] = -r;gpc[2][2] =  r;
+			gpc[5][0] =  r; gpc[1][1] = -r;gpc[2][2] =  r;
+			gpc[6][0] = -r; gpc[1][1] =  r;gpc[2][2] =  r;
+			gpc[7][0] =  r; gpc[1][1] =  r;gpc[2][2] =  r;
 			
-			// //,:)=[-r,-r,-r];   gpc(2,:)=[ r,-r,-r];      gpc(3,:)=[-r, r,-r];      gpc(4,:)=[ r, r,-r]; !These are the 4 points for 2D full elem
-      // // gpc(1,:)=[-r,-r,-r];   gpc(2,:)=[ r,-r,-r];      gpc(3,:)=[-r, r,-r];      gpc(4,:)=[ r, r,-r]; !These are the 4 points for 2D full elem
-      // // gpc(5,:)=[-r,-r, r];   gpc(6,:)=[ r,-r, r];      gpc(7,:)=[-r, r, r];      gpc(8,:)=[ r, r, r];
+			//,:)=[-r,-r,-r];   gpc(2,:)=[ r,-r,-r];      gpc(3,:)=[-r, r,-r];      gpc(4,:)=[ r, r,-r]; !These are the 4 points for 2D full elem
+      // gpc(1,:)=[-r,-r,-r];   gpc(2,:)=[ r,-r,-r];      gpc(3,:)=[-r, r,-r];      gpc(4,:)=[ r, r,-r]; !These are the 4 points for 2D full elem
+      // gpc(5,:)=[-r,-r, r];   gpc(6,:)=[ r,-r, r];      gpc(7,:)=[-r, r, r];      gpc(8,:)=[ r, r, r];
     
-      // if (m_dim == 3) {
-        // for (int gp=0;gp<m_gp_count;gp++){
+      if (m_dim == 3) {
+        for (int gp=0;gp<m_gp_count;gp++){
           
-          // dHrs(0,0)=-1.0*(1-gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,0)=-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,0)=-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1]);
-          // dHrs(0,1)=     (1-gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,1)=-1.0*(1+gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,1)=-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1]);
+          dHrs(0,0)=-1.0*(1-gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,0)=-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,0)=-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1]);
+          dHrs(0,1)=     (1-gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,1)=-1.0*(1+gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,1)=-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1]);
 					
-					// dHrs(0,2)=     (1+gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,2)=     (1+gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,2)=-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]);
-					// dHrs(0,3)=     (1+gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,3)=     (1-gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,3)=-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]);
+					dHrs(0,2)=     (1+gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,2)=     (1+gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,2)=-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]);
+					dHrs(0,3)=     (1+gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,3)=     (1-gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,3)=-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]);
 					
-          // // dHrs(1,:)=[-1.0*(1-gpc(gp,2))*(1.0-gpc(gp,3)),     (1-gpc(gp,2))*(1.0-gpc(gp,3))&
-                    // // ,     (1+gpc(gp,2))*(1.0-gpc(gp,3)),-1.0*(1+gpc(gp,2))*(1.0-gpc(gp,3))&
-                    // // ,-1.0*(1-gpc(gp,2))*(1.0+gpc(gp,3)),     (1-gpc(gp,2))*(1.0+gpc(gp,3))&
-                    // // ,     (1+gpc(gp,2))*(1.0+gpc(gp,3)),-1.0*(1+gpc(gp,2))*(1.0+gpc(gp,3))]
-          // // dHrs(2,:)=[-1.0*(1-gpc(gp,1))*(1.0-gpc(gp,3)),-1.0*(1+gpc(gp,1))*(1.0-gpc(gp,3))&
-                         // // ,(1+gpc(gp,1))*(1.0-gpc(gp,3)),     (1-gpc(gp,1))*(1.0-gpc(gp,3))&
-                    // // ,-1.0*(1-gpc(gp,1))*(1.0+gpc(gp,3)),-1.0*(1+gpc(gp,1))*(1.0+gpc(gp,3))&
-                         // // ,(1+gpc(gp,1))*(1.0+gpc(gp,3)),     (1-gpc(gp,1))*(1.0+gpc(gp,3))]
-          // // dHrs(3,:)=[-1.0*(1-gpc(gp,1))*(1.0-gpc(gp,2)),-1.0*(1+gpc(gp,1))*(1.0-gpc(gp,2))&
-                    // // ,-1.0*(1+gpc(gp,1))*(1.0+gpc(gp,2)),-1.0*(1-gpc(gp,1))*(1.0+gpc(gp,2))&
-                    // // ,     (1-gpc(gp,1))*(1.0-gpc(gp,2)),     (1+gpc(gp,1))*(1.0-gpc(gp,2))&
-                    // // ,     (1+gpc(gp,1))*(1.0+gpc(gp,2)),     (1-gpc(gp,1))*(1.0+gpc(gp,2))]                     
+          // dHrs(1,:)=[-1.0*(1-gpc(gp,2))*(1.0-gpc(gp,3)),     (1-gpc(gp,2))*(1.0-gpc(gp,3))&
+                    // ,     (1+gpc(gp,2))*(1.0-gpc(gp,3)),-1.0*(1+gpc(gp,2))*(1.0-gpc(gp,3))&
+                    // ,-1.0*(1-gpc(gp,2))*(1.0+gpc(gp,3)),     (1-gpc(gp,2))*(1.0+gpc(gp,3))&
+                    // ,     (1+gpc(gp,2))*(1.0+gpc(gp,3)),-1.0*(1+gpc(gp,2))*(1.0+gpc(gp,3))]
+          // dHrs(2,:)=[-1.0*(1-gpc(gp,1))*(1.0-gpc(gp,3)),-1.0*(1+gpc(gp,1))*(1.0-gpc(gp,3))&
+                         // ,(1+gpc(gp,1))*(1.0-gpc(gp,3)),     (1-gpc(gp,1))*(1.0-gpc(gp,3))&
+                    // ,-1.0*(1-gpc(gp,1))*(1.0+gpc(gp,3)),-1.0*(1+gpc(gp,1))*(1.0+gpc(gp,3))&
+                         // ,(1+gpc(gp,1))*(1.0+gpc(gp,3)),     (1-gpc(gp,1))*(1.0+gpc(gp,3))]
+          // dHrs(3,:)=[-1.0*(1-gpc(gp,1))*(1.0-gpc(gp,2)),-1.0*(1+gpc(gp,1))*(1.0-gpc(gp,2))&
+                    // ,-1.0*(1+gpc(gp,1))*(1.0+gpc(gp,2)),-1.0*(1-gpc(gp,1))*(1.0+gpc(gp,2))&
+                    // ,     (1-gpc(gp,1))*(1.0-gpc(gp,2)),     (1+gpc(gp,1))*(1.0-gpc(gp,2))&
+                    // ,     (1+gpc(gp,1))*(1.0+gpc(gp,2)),     (1-gpc(gp,1))*(1.0+gpc(gp,2))]                     
           
-          // // elem%dHrs(e,gp,:,:) =  dHrs(:,:)         
-          // // !dHrs(2,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))]         
-          // // !dHrs(3,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))] 
-          // // !print *, "dhrs", dHrs 
-          // // !print *, "x2", x2 
-          // // elem%jacob(e,gp,:,:) = 0.125*matmul(dHrs,x2)
-					// jacob = 0.125 * MatMul(dHrs,x2);
-// // ! #if defined _PRINT_DEBUG_
-          // // ! print *, "jacob ", elem%jacob(e,gp,:,:)
-// // ! #endif          
-          // // elem%detJ(e,gp) = det(elem%jacob(e,gp,:,:))
-          // // !print *, "detJ ", elem%detJ(e,gp)
-        // }
-      // } else { //!dim =2
-        // // do gp = 1,4
-          // // dHrs(1,:)=[-1.0*(1-gpc(gp,2)),     (1-gpc(gp,2))&
-                    // // ,     (1+gpc(gp,2)),-1.0*(1+gpc(gp,2))]
-          // // dHrs(2,:)=[-1.0*(1-gpc(gp,1)),-1.0*(1+gpc(gp,1))&
-                         // // ,(1+gpc(gp,1)),     (1-gpc(gp,1))]  
-					// for (int gp=0;gp<m_gp_count;gp++){										
-						// dHrs(0,0)=-1.0*(1-gpc[gp][1]); dHrs(0,1)=     (1-gpc[gp][1]); dHrs(0,2)=     (1+gpc[gp][1]); dHrs(0,3)=-1.0*(1+gpc[gp][1]);
-						// dHrs(1,0)=-1.0*(1-gpc[gp][0]); dHrs(1,1)=-1.0*(1+gpc[gp][0]); dHrs(1,2)=     (1+gpc[gp][0]); dHrs(1,3)=     (1-gpc[gp][0]);
-					// }
-          // // elem%dHrs(e,gp,:,:) =  dHrs(:,:)         
-          // // !dHrs(2,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))]         
-          // // !dHrs(3,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))] 
-          // // !print *, "dhrs", dHrs 
-          // // !print *, "x2", x2 
-          // // elem%jacob(e,gp,:,:) = 0.25*matmul(dHrs,x2)
-					// jacob = 0.25 * MatMul(dHrs,x2);
+
+					jacob = 0.125 * MatMul(dHrs,x2);
+
+        }
+      } else { //!dim =2
+        // do gp = 1,4
+          // dHrs(1,:)=[-1.0*(1-gpc(gp,2)),     (1-gpc(gp,2))&
+                    // ,     (1+gpc(gp,2)),-1.0*(1+gpc(gp,2))]
+          // dHrs(2,:)=[-1.0*(1-gpc(gp,1)),-1.0*(1+gpc(gp,1))&
+                         // ,(1+gpc(gp,1)),     (1-gpc(gp,1))]  
+					for (int gp=0;gp<m_gp_count;gp++){										
+						dHrs(0,0)=-1.0*(1-gpc[gp][1]); dHrs(0,1)=     (1-gpc[gp][1]); dHrs(0,2)=     (1+gpc[gp][1]); dHrs(0,3)=-1.0*(1+gpc[gp][1]);
+						dHrs(1,0)=-1.0*(1-gpc[gp][0]); dHrs(1,1)=-1.0*(1+gpc[gp][0]); dHrs(1,2)=     (1+gpc[gp][0]); dHrs(1,3)=     (1-gpc[gp][0]);
+					}
+          // elem%dHrs(e,gp,:,:) =  dHrs(:,:)         
+          // !dHrs(2,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))]         
+          // !dHrs(3,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))] 
+          // !print *, "dhrs", dHrs 
+          // !print *, "x2", x2 
+          // elem%jacob(e,gp,:,:) = 0.25*matmul(dHrs,x2)
+					jacob = 0.25 * MatMul(dHrs,x2);
 					
 					
-					// jacob.Print();
-// // ! #if defined _PRINT_DEBUG_
-          // // !print *, "jacob ", elem%jacob(e,gp,:,:)
-// // ! #endif          
-          // // elem%detJ(e,gp) = det(elem%jacob(e,gp,:,:))
-          // // !print *, "detJ ", elem%detJ(e,gp)
-        // // end do !gp      
+					jacob.Print();
+  
         
-      // }//dim 2 (gp>1)
-    // }// end if !!gp ==1
-// // ! #if defined _PRINT_DEBUG_
-    // // !print *, "jacob ", elem%jacob(e,gp,:,:)
-// // ! #endif    
-  // // end do !element
+      }//dim 2 (gp>1)
+    }// end if !!gp ==1
+
 	
 		printf("END.");
   }
@@ -358,7 +342,7 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
 
 
 __global__ void calcElemJAndDerivKernel(Domain_d *dom_d){
-		printf("calc derivs\n");
+		
 		dom_d->calcElemJAndDerivatives();
 }
 

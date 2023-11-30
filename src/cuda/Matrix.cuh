@@ -37,10 +37,11 @@ public:
   
   __spec double & getVal(const int &a, const int &b);
   __spec double & operator()(const int &a, const int &b);
-	
+  __spec void Set(const int &r, const int &c, const double &d);
 	__spec void Print();
   
-  __spec ~Matrix(){/*cudaFree (m_data);*/}
+  __device__ ~Matrix(){/*cudaFree (m_data);*/
+                       free(m_data);}
 	
 	__spec double calcDet();
 
@@ -54,7 +55,8 @@ __spec Matrix::Matrix(const int &row, const int &col) {
   m_row = row;
   m_col = col;
 	if (m_row == m_col) m_dim = m_row;
-  cudaMalloc((void**)&m_data, row * col * sizeof(double));
+  //cudaMalloc((void**)&m_data, row * col * sizeof(double));
+  m_data = (double*)malloc(row * col);
   //for (int i=0;i<row*col;i++) m_data[i] = 0.0;
 }
 
@@ -77,7 +79,11 @@ __spec Matrix MatMul(Matrix &A, Matrix &B){
   __spec double & Matrix::operator()(const int &a, const int &b){
     return m_data[m_row*a+b];
   }
-	
+
+  __spec void Matrix::Set(const int &r, const int &c, const double &d){
+    m_data[m_row*r+c] = d;
+  }
+  
 	__spec Matrix operator*(const double &c, Matrix &A) {
 	Matrix ret;
   for (int i=0;i<A.m_row*A.m_col;i++) ret.m_data[i] = A.m_data[i] * c;
@@ -85,12 +91,12 @@ __spec Matrix MatMul(Matrix &A, Matrix &B){
 }
 
 	__spec void Matrix::Print() {
-	printf("%lf ",m_data[0]);
-  // for (int i=0;i<m_row*m_col;i++) {
-		// for (int j=0;j<m_col*m_col;j++) 
-			// printf("%lf ", getVal(i,j)) ;
-		// printf("\n");
-	// }
+	//printf("%lf ",m_data[0]);
+  for (int i=0;i<m_row*m_col;i++) {
+		for (int j=0;j<m_col*m_col;j++) 
+			printf("%lf ", getVal(i,j)) ;
+		printf("\n");
+	}
 
 }
 

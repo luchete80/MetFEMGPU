@@ -37,6 +37,9 @@ int main(){
 	double r = 0.05;
 	
 	dom_d->AddBoxLength(V,L,r);
+  
+  double *a;
+  cudaFree(a);
 	
 	//SolverChungHulbert solver(&dom);
 	cout << "Element Count "<<dom_d->getElemCount()<<endl;
