@@ -231,7 +231,9 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
 	//dHrs->Print();
    Matrix *x2 = new Matrix(m_nodxelem, m_dim);
 	 Matrix *jacob = new Matrix(m_dim, m_dim);
-   jacob->Print();
+   printf("Jacob\n");jacob->Print();
+   double gpc[8][3];
+
 	printf ("Matrices created\n");
 
       // do i=1,nodxelem
@@ -275,7 +277,7 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
       } // end if  !!!!DIM
       // elem%detJ(e,gp) = det(elem%jacob(e,gp,:,:))
     } else { //!!!!! GP > 1
-			double gpc[8][3];
+			
       double r = 1.0/sqrt(3.0);
 			gpc[0][0] = -r; gpc[1][1] = -r;gpc[2][2] = -r;
 			gpc[1][0] =  r; gpc[1][1] = -r;gpc[2][2] = -r;
@@ -317,6 +319,7 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           //MatMul(*dHrs,*x2,jacob);
           printf("jacob\n");
           m_jacob[e].Print();
+          jacob->Print();
           x2->m_data[0]=0.0;
           dHrs->m_data[0]=0.0;
           //printf("Jacobian: \n");jacob->Print();
