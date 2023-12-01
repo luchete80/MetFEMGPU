@@ -72,6 +72,14 @@ __spec Matrix MatMul(Matrix &A, Matrix &B){
   return ret;
 }
 
+__spec void MatMul(Matrix &A, Matrix &B, Matrix *ret){
+  // for (int i = 0; i<A.m_row; i++)
+    // for (int j = 0; j<A.m_col; j++)
+      // for (int k = 0; k<A.m_col; k++)
+        // ret.m_data[i * A.m_row + j] += A.m_data[i * A.m_row + k] * B.m_data[k * B.m_row + j ];
+  ret->m_data[0] = 0.0;
+}
+
   __spec double & Matrix::getVal(const int &a, const int &b){
     return m_data[m_row*a+b];
   }
@@ -92,8 +100,8 @@ __spec Matrix MatMul(Matrix &A, Matrix &B){
 
 	__spec void Matrix::Print() {
 	//printf("%lf ",m_data[0]);
-  for (int i=0;i<m_row*m_col;i++) {
-		for (int j=0;j<m_col*m_col;j++) 
+  for (int i=0;i<m_row;i++) {
+		for (int j=0;j<m_col;j++) 
 			printf("%lf ", getVal(i,j)) ;
 		printf("\n");
 	}

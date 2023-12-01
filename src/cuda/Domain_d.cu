@@ -42,9 +42,11 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
     if (m_dim == 2){
       nel[2] = 1;
       m_nodxelem = 4;
+      m_gp_count = 4;
     } else {
       nel[2] = (int)(L.z/(2.0*r));
       m_nodxelem = 8;
+      m_gp_count = 8;
     }
     
 
@@ -54,6 +56,8 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
     // write (*,*) "Creating Mesh ...", "Elements ", neL.y, ", ",neL.z
   int nc = (nel[0] +1) * (nel[1]+1) * (nel[2]+1);
   int ne = nel[0]*nel[1]*nel[2];
+  cout << "Mesh created. Element count: "<< nel[0]<<", "<<nel[1]<<", "<<nel[2]<<endl;
+  
   //thisAllocateNodes((nel[0] +1) * (nel[1]+1) * (nel[2]+1));
     // print *, "Element count in XYZ: ", nel(:)
     // write (*,*) "Box Node count ", node_count
@@ -71,7 +75,7 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
     
     cout << "Box Particle Count is " << m_node_count <<endl;
     p = 0;
-    for (int j = 0; j < (nel[1] +1);j++) {
+    for (int k = 0; k < (nel[2] +1);k++) {
       Xp.y = V.y;
       for (int j = 0; j < (nel[1] +1);j++){
         Xp.x = V.x;
@@ -173,6 +177,9 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
     cudaMalloc((void **)&m_elnod, m_elem_count * m_nodxelem * sizeof (double3));
 		cudaMemcpy(this->m_elnod, elnod_h, sizeof(double) * m_elem_count * m_nodxelem, cudaMemcpyHostToDevice);    
     
+
+    cudaMalloc(&m_jacob,m_elem_count * sizeof(Matrix ));
+    
     // call AllocateDomain()
     // i = 1
     // do while ( i <= node_count)
@@ -207,20 +214,24 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
 	//printf ("threadIdx.x %d, blockDim.x%d, blockIdx.x %d\n",threadIdx.x ,blockDim.x , blockIdx.x);
   
   int e = threadIdx.x + blockDim.x*blockIdx.x;
+  
 
 	//printf ("e %d, elem_count %d\n",m_elem_count);
-  if (e < 1) {
+  if (e < m_elem_count) {
   // integer :: e
   // ! !rg=gauss[ig]
   // ! !sg=gauss[jg]
   // real(fp_kind), dimension(dim,m_nodxelem) :: dHrs !!! USED ONLY FOR SEVERAL GAUSS POINTS
 	printf ("m_dim %d, nod x elem %d", m_dim, m_nodxelem);
-  Matrix dHrs(m_dim, m_nodxelem); /// IN ELEM_TYPE
+
+  Matrix *dHrs = new Matrix(m_dim, m_nodxelem);   /////////////////////////////// IF CREATION IS DYNAMIC ! (TEST IF )
+  //cudaMalloc((void**)&dHrs_p, sizeof(Matrix));
 	//printf("test %lf",dHrs.m_data[0]);
 	//double dHrs_fl[m_dim* m_nodxelem];
-	dHrs.Print();
-   Matrix x2(m_nodxelem, m_dim);
-	 Matrix jacob(m_dim, m_dim);
+	//dHrs->Print();
+   Matrix *x2 = new Matrix(m_nodxelem, m_dim);
+	 Matrix *jacob = new Matrix(m_dim, m_dim);
+   jacob->Print();
 	printf ("Matrices created\n");
 
       // do i=1,nodxelem
@@ -228,17 +239,12 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           // x2(i,:)=nod%x(elem%elnod(e,i),:)
       // end do
   int nind = e * m_nodxelem;
-  for (int i=0;i<m_nodxelem;i++)
-    for (int d=0;d<m_dim;d++){
+  for (int i=0;i<m_nodxelem;i++){
+      x2->Set(i,0,x[m_elnod[nind+i]].x); x2->Set(i,1,x[m_elnod[nind+i]].y); x2->Set(i,2,x[m_elnod[nind+i]].z);
       printf ("elnod %d, %lf %lf %lf \n",m_elnod[nind+i],x[m_elnod[nind+i]].x,x[m_elnod[nind+i]].y,x[m_elnod[nind+i]].z);
-      x2(i,0) = 0.0;
-      double test = x[m_elnod[nind+i]].x;
-      
-      //x2.Set(i,0,test);
-      //x2.Set(i,0,x[m_elnod[nind+i]].x);
-      // x2(i,1) = x[m_elnod[nind+i]].y;
-      // x2(i,2) = x[m_elnod[nind+i]].z;
-    }
+  } 
+  printf("x2\n");x2->Print();
+  printf("m_gp_count %d\n",m_gp_count);
     printf("Calculating jacobian\n");
     if (m_gp_count == 1 ) {      
 			if (m_dim == 2) {
@@ -287,11 +293,11 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
       if (m_dim == 3) {
         for (int gp=0;gp<m_gp_count;gp++){
           
-          dHrs(0,0)=-1.0*(1-gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,0)=-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,0)=-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1]);
-          dHrs(0,1)=     (1-gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,1)=-1.0*(1+gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,1)=-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1]);
+          dHrs->Set(0,0,-1.0*(1-gpc[gp][1])*(1.0-gpc[gp][2]));  dHrs->Set(1,0,-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][2])); dHrs->Set(2,0,-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1]));
+          dHrs->Set(0,1,(1-gpc[gp][1])*(1.0-gpc[gp][2]));       dHrs->Set(1,1,-1.0*(1+gpc[gp][0])*(1.0-gpc[gp][2])); dHrs->Set(2,1,-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1]));
 					
-					dHrs(0,2)=     (1+gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,2)=     (1+gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,2)=-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]);
-					dHrs(0,3)=     (1+gpc[gp][1])*(1.0-gpc[gp][2]); dHrs(1,3)=     (1-gpc[gp][0])*(1.0-gpc[gp][2]); dHrs(2,3)=-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]);
+					dHrs->Set(0,2,(1+gpc[gp][1])*(1.0-gpc[gp][2]));       dHrs->Set(1,2,(1+gpc[gp][0])*(1.0-gpc[gp][2])); dHrs->Set(2,2,-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]));
+					dHrs->Set(0,3,(1+gpc[gp][1])*(1.0-gpc[gp][2]));       dHrs->Set(1,3,(1-gpc[gp][0])*(1.0-gpc[gp][2])); dHrs->Set(2,3,-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]));
 					
           // dHrs(1,:)=[-1.0*(1-gpc(gp,2))*(1.0-gpc(gp,3)),     (1-gpc(gp,2))*(1.0-gpc(gp,3))&
                     // ,     (1+gpc(gp,2))*(1.0-gpc(gp,3)),-1.0*(1+gpc(gp,2))*(1.0-gpc(gp,3))&
@@ -307,8 +313,14 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
                     // ,     (1+gpc(gp,1))*(1.0+gpc(gp,2)),     (1-gpc(gp,1))*(1.0+gpc(gp,2))]                     
           
 
-					jacob = 0.125 * MatMul(dHrs,x2);
-
+					//*jacob = 0.125 * MatMul(*dHrs,*x2);
+          //MatMul(*dHrs,*x2,jacob);
+          printf("jacob\n");
+          m_jacob[e].Print();
+          x2->m_data[0]=0.0;
+          dHrs->m_data[0]=0.0;
+          //printf("Jacobian: \n");jacob->Print();
+          
         }
       } else { //!dim =2
         // do gp = 1,4
@@ -317,8 +329,8 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           // dHrs(2,:)=[-1.0*(1-gpc(gp,1)),-1.0*(1+gpc(gp,1))&
                          // ,(1+gpc(gp,1)),     (1-gpc(gp,1))]  
 					for (int gp=0;gp<m_gp_count;gp++){										
-						dHrs(0,0)=-1.0*(1-gpc[gp][1]); dHrs(0,1)=     (1-gpc[gp][1]); dHrs(0,2)=     (1+gpc[gp][1]); dHrs(0,3)=-1.0*(1+gpc[gp][1]);
-						dHrs(1,0)=-1.0*(1-gpc[gp][0]); dHrs(1,1)=-1.0*(1+gpc[gp][0]); dHrs(1,2)=     (1+gpc[gp][0]); dHrs(1,3)=     (1-gpc[gp][0]);
+						dHrs->Set(0,0,-1.0*(1-gpc[gp][1])); dHrs->Set(0,1,(1-gpc[gp][1]));      dHrs->Set(0,2,1+gpc[gp][1]);    dHrs->Set(0,3,-1.0*(1+gpc[gp][1]));
+						dHrs->Set(1,0,-1.0*(1-gpc[gp][0])); dHrs->Set(1,1,-1.0*(1+gpc[gp][0])); dHrs->Set(1,2,(1+gpc[gp][0]));  dHrs->Set(1,3,(1-gpc[gp][0]));
 					}
           // elem%dHrs(e,gp,:,:) =  dHrs(:,:)         
           // !dHrs(2,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))]         
@@ -326,18 +338,23 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           // !print *, "dhrs", dHrs 
           // !print *, "x2", x2 
           // elem%jacob(e,gp,:,:) = 0.25*matmul(dHrs,x2)
-					jacob = 0.25 * MatMul(dHrs,x2);
+					//*jacob = 0.25 * MatMul(*dHrs,*x2);
+          jacob->m_data[0]=0.0;
 					
 					
-					jacob.Print();
-  
+					//jacob->Print();
+        
+        
         
       }//dim 2 (gp>1)
     }// end if !!gp ==1
 
 	
 		printf("END.");
-  }
+  
+    delete dHrs,x2, jacob;
+    
+  } // e < elem_colunt
 }
 
 

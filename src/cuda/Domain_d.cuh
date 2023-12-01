@@ -4,6 +4,8 @@
 #include <cuda.h>
 #include "cudautils.cuh"
 
+class Matrix;
+
 namespace MetFEM{
 class Domain_d {
 public:
@@ -36,11 +38,22 @@ protected:
   bool            m_red_int;  //Reduced integration, 1 GAUSS POINT
   int             m_gp_count; //Assuming constant gauss points
   int             m_nodxelem;
+  
+  /////////////////////// //LOW ACCESS SPEED; BUT NOT DYNAMIC CREATION ///////////////////////////////////
+  Matrix          **m_dHrs;     //LOW ACCESS SPEED; BUT NOT DYNAMIC CREATION
+  Matrix          **x2;         //LOW ACCESS SPEED; BUT NOT DYNAMIC CREATION
+  Matrix          **dH_dxyz; 
+  
+  Matrix          *m_jacob;
 	
   //Updated lagrangian formulation
   //real(fp_kind), dimension(:,:,:,:), allocatable :: BL,BNL, jacob, dHxy,dHxy_detJ, dHxy0,math, dHrs !!!DIM: e,gp,,:,:, is it necesary to store dHrs??? is only because is used twice, at J and dHxy
   double         *dHxy_detJ ; //
-	
+  
+  ////// THESE ARE SUBDIVIDED FOR HIGHER ACCESS SPEED (LOWER OFFSET)
+  double         *dH_dx ; //GAUSS_POINT
+  double         *dH_dy ; 	
+  double         *dH_dz ; 
 	
 	double					Time;    				//Current time of simulation at each solving step
 	double					deltat;					//Time Step
