@@ -1,4 +1,15 @@
+#include "Domain_d.cuh"
+#include <iostream>
+#include <vector>
 
+#include "tensor.cuh"
+#include "Matrix.cuh"
+
+using namespace std;
+
+namespace MetFEM {
+  
+  
 // !!!!!!!!!!!!!!!Gradv = L = dvx/dx dvx/dy  dvx/dz
 // !!!!!!!!!!!!!!!!!!!        dvy/dx dvy/dy  dvy/dz
 // !!!! E = 1/2 (L+LT)
@@ -82,3 +93,93 @@
     // end do !gp
   // end do !element
 // end subroutine
+
+  __device__ void Domain_d::calcElemStrains(){
+
+  int e = threadIdx.x + blockDim.x*blockIdx.x;
+  Matrix *str_rate = new Matrix(m_dim,m_dim); //TODO: MAKE SYMM MATRIX
+  if (e < m_elem_count) {
+    for (int gp=0;gp<m_gp_count;gp++){
+  // elem%str_rate = 0.0d0
+  // elem%rot_rate = 0.0d0
+  
+
+      // f = 1.0d0/elem%detJ(e,gp)
+      // temp = elem%dHxy_detJ(e,gp,:,:) * f!!!!TODO: MODIFY BY MULTIPLYING
+      // elem%strain(e,gp,:,:) = matmul(elem%bl(e,gp,:,:),elem%uele (e,:,:)) 
+      // !print *, "standard stran rate calc (matricial) "
+
+
+      for (int n=0; n<m_nodxelem;n++) {
+        // do d=1, dim
+          // !print *, "node dim dHxy vele", n,d,temp(d,n) , elem%vele (e,dim*(n-1)+d,1) 
+          // elem%str_rate(e,gp, d,d) = elem%str_rate(e,gp, d,d) + temp(d,n) * elem%vele (e,dim*(n-1)+d,1) 
+          // elem%rot_rate(e,gp, d,d) = 0.0d0
+        // end do
+        for (int d=0;d<m_dim;d++){
+          
+          // elem%str_rate(e,gp, d,d) = elem%str_rate(e,gp, d,d) + temp(d,n) * elem%vele (e,dim*(n-1)+d,1) 
+          // elem%rot_rate(e,gp, d,d) = 0.0d0
+        }//dim
+        // !!!! TO AVOID ALL MATMULT
+        // elem%str_rate(e,gp, 1,2) = elem%str_rate(e,gp, 1,2) + temp(2,n)* elem%vele (e,dim*(n-1)+1,1) &!!!!dvx/dy
+                                   // + temp(1,n) * elem%vele (e,dim*(n-1)+2,1)
+        // elem%rot_rate(e,gp, 1,2) = elem%rot_rate(e,gp, 1,2) + temp(2,n)* elem%vele (e,dim*(n-1)+1,1) & !!!!dvx/dx
+                                   // - temp(1,n) * elem%vele (e,dim*(n-1)+2,1)                           !!!!
+        // if (dim == 3) then
+          // elem%str_rate(e,gp, 2,3) = elem%str_rate(e,gp, 2,3) + temp(3,n)* elem%vele (e,dim*(n-1)+2,1) &!!!d/dz*vy     
+                                     // + temp(2,n) * elem%vele (e,dim*(n-1)+3,1)    !!!d/dy*vz
+          // elem%str_rate(e,gp, 1,3) = elem%str_rate(e,gp, 1,3) + temp(3,n)* elem%vele (e,dim*(n-1)+1,1) & !!!d/dz*vx     
+                                     // + temp(1,n) * elem%vele (e,dim*(n-1)+3,1)    !!!d/dx*vz     
+          // elem%rot_rate(e,gp, 2,3) = elem%rot_rate(e,gp, 2,3) + temp(3,n)* elem%vele (e,dim*(n-1)+2,1) &
+                                     // - temp(2,n) * elem%vele (e,dim*(n-1)+3,1)    !!!d/dy*vz
+          // elem%rot_rate(e,gp, 1,3) = elem%rot_rate(e,gp, 1,3) + temp(3,n)* elem%vele (e,dim*(n-1)+1,1) & !!!d/dz*vx     
+                                     // - temp(1,n) * elem%vele (e,dim*(n-1)+3,1)    !!!d/dx*vz    
+        // end if     
+      }// end do !Nod x elem
+      
+      // elem%str_rate(e,gp, 1,2) = 0.5 * elem%str_rate(e,gp, 1,2); 
+      // elem%rot_rate(e,gp, 1,2) = 0.5 * elem%rot_rate(e,gp, 1,2)      
+
+      // elem%str_rate(e,gp, 2,1) =     elem%str_rate(e,gp, 1,2)
+      // elem%rot_rate(e,gp, 2,1) =    -elem%rot_rate(e,gp, 1,2)
+      // if (dim .eq. 3) then
+        // elem%str_rate(e,gp, 1,3) = 0.5 * elem%str_rate(e,gp, 1,3); elem%str_rate(e,gp, 2,3) = 0.5 * elem%str_rate(e,gp, 2,3)
+        // elem%rot_rate(e,gp, 1,3) = 0.5 * elem%rot_rate(e,gp, 1,3); elem%rot_rate(e,gp, 2,3) = 0.5 * elem%rot_rate(e,gp, 2,3)
+        
+        // elem%str_rate(e,gp, 3,2) =     elem%str_rate(e,gp, 2,3)
+        // elem%str_rate(e,gp, 3,1) =     elem%str_rate(e,gp, 1,3)
+
+        // elem%rot_rate(e,gp, 3,2) =     -elem%rot_rate(e,gp, 2,3)
+        // elem%rot_rate(e,gp, 3,1) =     -elem%rot_rate(e,gp, 1,3)
+      // end if
+
+      // !elem%str_rate(e,gp,:,:) = matmul(elem%bl(e,gp,:,:),elem%vele (e,:,:)) 
+      // !print *, "simlpified strain rate "
+
+      //Inverse test
+      // Matrix *test = new Matrix(3,3);
+      // Matrix *invtest = new Matrix(3,3);
+      // printf("A\n");
+      // test->Set(0,0,1);test->Set(0,1,1);test->Set(0,2,1);
+      // test->Set(1,0,1);test->Set(1,1,2);test->Set(1,2,2);      
+      // test->Set(2,0,1);test->Set(2,1,2);test->Set(2,2,3);
+      // InvMat(*test,invtest);
+      // //printf("inv A\n");
+      // test->Print();
+      // invtest->Print();
+        // delete test, invtest;
+      } // Gauss Point
+    }//if e<elem_count
+    
+    delete str_rate;
+  } //calcElemStrains
+  
+  __global__ void calcElemStrainsKernel(Domain_d *dom_d){
+		
+		dom_d->calcElemStrains();
+}
+
+  
+  
+}; //Namespace MetFEM

@@ -37,8 +37,11 @@ public:
   
   __spec double & getVal(const int &a, const int &b);
   __spec double & operator()(const int &a, const int &b);
+  __spec Matrix  operator*(const double &f);
+  __spec Matrix & Mul(const double &f);
   __spec void Set(const int &r, const int &c, const double &d);
 	__spec void Print();
+  __spec Matrix & Transpose();
   
   __device__ ~Matrix(){/*cudaFree (m_data);*/
                        free(m_data);}
@@ -60,6 +63,7 @@ __spec Matrix::Matrix(const int &row, const int &col) {
   //for (int i=0;i<row*col;i++) m_data[i] = 0.0;
 }
 
+//// OPERATION WITH MATRIX CREATION COULD PRODUCE MEM LEAKING
 __spec Matrix MatMul(Matrix &A, Matrix &B){
   Matrix ret(A.m_row,B.m_col);
   for (int i = 0; i<A.m_row; i++)
@@ -73,11 +77,11 @@ __spec Matrix MatMul(Matrix &A, Matrix &B){
 }
 
 __spec void MatMul(Matrix &A, Matrix &B, Matrix *ret){
-  // for (int i = 0; i<A.m_row; i++)
-    // for (int j = 0; j<A.m_col; j++)
-      // for (int k = 0; k<A.m_col; k++)
-        // ret.m_data[i * A.m_row + j] += A.m_data[i * A.m_row + k] * B.m_data[k * B.m_row + j ];
-  ret->m_data[0] = 0.0;
+  for (int i = 0; i<A.m_row; i++)
+    for (int j = 0; j<A.m_col; j++)
+      for (int k = 0; k<A.m_col; k++)
+        ret->m_data[i * A.m_row + j] += A.m_data[i * A.m_row + k] * B.m_data[k * B.m_row + j ];
+
 }
 
   __spec double & Matrix::getVal(const int &a, const int &b){
@@ -92,10 +96,27 @@ __spec void MatMul(Matrix &A, Matrix &B, Matrix *ret){
     m_data[m_row*r+c] = d;
   }
   
+  __spec Matrix & Matrix::Transpose(){
+    for (int i=0;i<m_row*m_col;i++)
+      for (int j=0;j<m_col*m_col;j++)
+        this->Set(j,i,this->getVal(i,j) );
+    return *this;
+  }
+  
 	__spec Matrix operator*(const double &c, Matrix &A) {
 	Matrix ret;
   for (int i=0;i<A.m_row*A.m_col;i++) ret.m_data[i] = A.m_data[i] * c;
 	return ret;
+}
+
+	__spec Matrix Matrix::operator*(const double &f) {
+  for (int i=0;i<m_row*m_col;i++) m_data[i] = f* m_data[i] ;
+  return *this;
+}
+
+	__spec Matrix & Matrix::Mul(const double &f) {
+  for (int i=0;i<m_row*m_col;i++) m_data[i] *= f;
+  return *this;
 }
 
 	__spec void Matrix::Print() {
@@ -183,6 +204,30 @@ __spec double Matrix::calcDet (){
 
 	}
 	return ret;
+}
+
+__spec void InvMat(Matrix &A, Matrix *invA){
+  if (A.m_dim ==2){
+    
+    
+  } else if (A.m_dim == 3) {
+    Matrix *cofactor = new Matrix(3,3);
+    cofactor->Set(0,0, (A(1,1)*A(2,2)-A(1,2)*A(2,1)) );
+    cofactor->Set(0,1,-(A(1,0)*A(2,2)-A(1,2)*A(2,0)) );
+    cofactor->Set(0,2, (A(2,0)*A(2,1)-A(1,1)*A(2,0)) );
+    cofactor->Set(1,0,-(A(0,1)*A(2,2)-A(0,2)*A(2,1)) );
+    cofactor->Set(1,1, (A(0,0)*A(2,2)-A(0,2)*A(2,0)) );
+    cofactor->Set(1,2,-(A(0,0)*A(2,1)-A(0,1)*A(2,0)) );
+    cofactor->Set(2,0, (A(0,1)*A(1,2)-A(0,2)*A(1,1)) );
+    cofactor->Set(2,1,-(A(0,0)*A(1,2)-A(0,2)*A(1,0)) );
+    cofactor->Set(2,2, (A(0,0)*A(1,1)-A(0,1)*A(1,0)) );    
+    
+    cofactor->Transpose();
+    *invA = cofactor->Mul(1.0/A.calcDet());
+    
+    delete cofactor;
+  }
+  
 }
 
 // function invmat (a)

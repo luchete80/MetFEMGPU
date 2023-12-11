@@ -21,6 +21,9 @@ __host__ void SolverChungHulbert::Solve(){
 	
 	calcElemJAndDerivKernel<<<m_dom->blocksPerGrid,m_dom->threadsPerBlock >>>(m_dom);
 	cudaDeviceSynchronize(); 
+  
+  calcElemStrains<<<m_dom->blocksPerGrid,m_dom->threadsPerBlock >>>(m_dom);
+	cudaDeviceSynchronize(); 
 	
 }
 

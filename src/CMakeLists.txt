@@ -40,6 +40,7 @@ add_executable(MetFEMGPU
                           # Mesh.cpp
                           main.cu
 													cuda/Domain_d.cu
+                          cuda/Mechanical.cu
                           cuda/cudautils.cu
 													cuda/Solver.cu
 

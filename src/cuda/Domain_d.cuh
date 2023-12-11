@@ -14,7 +14,9 @@ public:
   
   __device__ void calcElemJacobian ();
   __device__ void calcElemJAndDerivatives/*_FullInt*/();
-	
+
+	__device__ void calcElemStrains();
+  
 	int threadsPerBlock, blocksPerGrid; //TO BE USED BY SOLVER
 	
 	const int & getElemCount()const{return m_elem_count;}
@@ -45,6 +47,8 @@ protected:
   Matrix          **dH_dxyz; 
   
   Matrix          *m_jacob;
+  
+  double          *m_strain_rate;
 	
   //Updated lagrangian formulation
   //real(fp_kind), dimension(:,:,:,:), allocatable :: BL,BNL, jacob, dHxy,dHxy_detJ, dHxy0,math, dHrs !!!DIM: e,gp,,:,:, is it necesary to store dHrs??? is only because is used twice, at J and dHxy
@@ -65,6 +69,7 @@ protected:
 };
 
 __global__ void calcElemJAndDerivKernel(Domain_d *dom_d);
+__global__ void calcElemStrainsKernel(Domain_d *dom_d);
 
 }; //Namespace
 

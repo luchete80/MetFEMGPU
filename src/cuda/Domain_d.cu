@@ -93,7 +93,7 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
 
     //cout <<"m_node size"<<m_node.size()<<endl;
     } 
-		cudaMemcpy(this->x, x_H, sizeof(double) * m_node_count, cudaMemcpyHostToDevice);    
+		cudaMemcpy(this->x, x_H, sizeof(double3) * m_node_count, cudaMemcpyHostToDevice);    
 
     // !! ALLOCATE ELEMENTS
     // !! DIMENSION = 2
@@ -147,6 +147,10 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
           elnod_h[ei+5] = nb1 + nnodz*(ez+1) + 1;
           elnod_h[ei+6] = nb2 + nnodz*(ez+1) + 1;
           elnod_h[ei+7] = nb2 + nnodz*(ez+1);
+          
+          for (int i=0;i<8;i++)
+            cout << elnod_h[ei + i]<<", ";
+          cout <<endl;
 
           // elem%elnod(i,:) = [ nnodz*ez + (nel(1)+1)*ey + ex+1,nnodz*ez + (nel(1)+1)*ey + ex+2, &
                               // nnodz*ez + (nel(1)+1)*(ey+1)+ex+2,nnodz*ez + (nel(1)+1)*(ey+1)+ex+1, &
@@ -216,6 +220,7 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
   int e = threadIdx.x + blockDim.x*blockIdx.x;
   
 	Matrix *jacob = new Matrix(m_dim, m_dim);    
+  Matrix *dHrs = new Matrix(m_dim, m_nodxelem);   /////////////////////////////// IF CREATION IS DYNAMIC ! (TEST IF )
    
 	//printf ("e %d, elem_count %d\n",m_elem_count);
   if (e < m_elem_count) {
@@ -225,7 +230,7 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
   // real(fp_kind), dimension(dim,m_nodxelem) :: dHrs !!! USED ONLY FOR SEVERAL GAUSS POINTS
 	printf ("m_dim %d, nod x elem %d", m_dim, m_nodxelem);
 
-  Matrix *dHrs = new Matrix(m_dim, m_nodxelem);   /////////////////////////////// IF CREATION IS DYNAMIC ! (TEST IF )
+  
   //cudaMalloc((void**)&dHrs_p, sizeof(Matrix));
 	//printf("test %lf",dHrs.m_data[0]);
 	//double dHrs_fl[m_dim* m_nodxelem];
@@ -321,10 +326,14 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           MatMul(*dHrs,*x2,jacob);
           printf("jacob\n");
           //m_jacob[e].Print();
+
+          x2->Print();
           jacob->Print();
-          x2->m_data[0]=0.0;
-          dHrs->m_data[0]=0.0;
+          jacob->Mul(0.125);
+
+          // jacob->Print();
           //printf("Jacobian: \n");jacob->Print();
+           printf("dHrs\n"); dHrs->Print();
           
         }
       } else { //!dim =2
@@ -344,7 +353,6 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           // !print *, "x2", x2 
           // elem%jacob(e,gp,:,:) = 0.25*matmul(dHrs,x2)
 					//*jacob = 0.25 * MatMul(*dHrs,*x2);
-          jacob->m_data[0]=0.0;
 					
 					
 					//jacob->Print();
@@ -356,10 +364,10 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
 
 	
 		printf("END.");
-  
-    delete dHrs,x2, jacob;
     
   } // e < elem_colunt
+  
+      delete dHrs,x2, jacob;
 }
 
 
