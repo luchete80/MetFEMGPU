@@ -215,7 +215,8 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
   
   int e = threadIdx.x + blockDim.x*blockIdx.x;
   
-
+	Matrix *jacob = new Matrix(m_dim, m_dim);    
+   
 	//printf ("e %d, elem_count %d\n",m_elem_count);
   if (e < m_elem_count) {
   // integer :: e
@@ -230,7 +231,8 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
 	//double dHrs_fl[m_dim* m_nodxelem];
 	//dHrs->Print();
    Matrix *x2 = new Matrix(m_nodxelem, m_dim);
-	 Matrix *jacob = new Matrix(m_dim, m_dim);
+
+   
    printf("Jacob\n");jacob->Print();
    double gpc[8][3];
 
@@ -316,9 +318,9 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           
 
 					//*jacob = 0.125 * MatMul(*dHrs,*x2);
-          //MatMul(*dHrs,*x2,jacob);
+          MatMul(*dHrs,*x2,jacob);
           printf("jacob\n");
-          m_jacob[e].Print();
+          //m_jacob[e].Print();
           jacob->Print();
           x2->m_data[0]=0.0;
           dHrs->m_data[0]=0.0;
