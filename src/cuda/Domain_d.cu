@@ -220,7 +220,10 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
   int e = threadIdx.x + blockDim.x*blockIdx.x;
   
 	Matrix *jacob = new Matrix(m_dim, m_dim);    
+	Matrix *inv_j = new Matrix(m_dim, m_dim);    
   Matrix *dHrs = new Matrix(m_dim, m_nodxelem);   /////////////////////////////// IF CREATION IS DYNAMIC ! (TEST IF )
+  
+  Matrix *dHxy_detJ_loc = new Matrix(m_dim, m_nodxelem);
    
 	//printf ("e %d, elem_count %d\n",m_elem_count);
   if (e < m_elem_count) {
@@ -344,6 +347,15 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           // jacob->Print();
           //printf("Jacobian: \n");jacob->Print();
            printf("dHrs\n"); dHrs->Print();
+           
+          InvMat(*jacob, inv_j);
+          printf("inv j\n");inv_j->Print();
+          MatMul(*inv_j,*dHrs,dHxy_detJ_loc);
+          
+          // invJ = adj(elem%jacob(e,gp,:,:))!!!!/elem%detJ(e,gp) !!!! ALREADY CALCULATED    
+          // !print *, "detJ", elem%detJ(e,gp)
+          // !print *, "invJ", invJ
+          // elem%dHxy_detJ(e,gp,:,:) = 0.125d0 * matmul(invJ,elem%dHrs(e,gp,:,:))
           
         }// gp
       } else { //!dim =2
