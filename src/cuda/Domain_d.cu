@@ -286,27 +286,38 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
     } else { //!!!!! GP > 1
 			
       double r = 1.0/sqrt(3.0);
-			gpc[0][0] = -r; gpc[1][1] = -r;gpc[2][2] = -r;
-			gpc[1][0] =  r; gpc[1][1] = -r;gpc[2][2] = -r;
-			gpc[2][0] = -r; gpc[1][1] =  r;gpc[2][2] = -r;
-			gpc[3][0] =  r; gpc[1][1] =  r;gpc[2][2] = -r;
-			gpc[4][0] = -r; gpc[1][1] = -r;gpc[2][2] =  r;
-			gpc[5][0] =  r; gpc[1][1] = -r;gpc[2][2] =  r;
-			gpc[6][0] = -r; gpc[1][1] =  r;gpc[2][2] =  r;
-			gpc[7][0] =  r; gpc[1][1] =  r;gpc[2][2] =  r;
+			gpc[0][0] = -r; gpc[0][1] = -r;gpc[0][2] = -r;
+			gpc[1][0] =  r; gpc[1][1] = -r;gpc[1][2] = -r;
+			gpc[2][0] = -r; gpc[2][1] =  r;gpc[2][2] = -r;
+			gpc[3][0] =  r; gpc[3][1] =  r;gpc[3][2] = -r;
+			gpc[4][0] = -r; gpc[4][1] = -r;gpc[4][2] =  r;
+			gpc[5][0] =  r; gpc[5][1] = -r;gpc[5][2] =  r;
+			gpc[6][0] = -r; gpc[6][1] =  r;gpc[6][2] =  r;
+			gpc[7][0] =  r; gpc[7][1] =  r;gpc[7][2] =  r;
 			
 			//,:)=[-r,-r,-r];   gpc(2,:)=[ r,-r,-r];      gpc(3,:)=[-r, r,-r];      gpc(4,:)=[ r, r,-r]; !These are the 4 points for 2D full elem
       // gpc(1,:)=[-r,-r,-r];   gpc(2,:)=[ r,-r,-r];      gpc(3,:)=[-r, r,-r];      gpc(4,:)=[ r, r,-r]; !These are the 4 points for 2D full elem
       // gpc(5,:)=[-r,-r, r];   gpc(6,:)=[ r,-r, r];      gpc(7,:)=[-r, r, r];      gpc(8,:)=[ r, r, r];
-    
+      //h1 = (1-r)(1-s)(1-t) //h2 = (1+r)(1-s)(1-t) //h3 = (1-r)(1+s)
+      //h3 = (1+r)(1+s)(1-t) //h4 = (1-r)(1+s)(1-t)
+            // elem%math(e,gp, 1,:) = 0.125*[(1-gpc(gp,1))*(1-gpc(gp,2))*(1-gpc(gp,3)),(1+gpc(gp,1))*(1-gpc(gp,2))*(1-gpc(gp,3)), &
+                                // (1+gpc(gp,1))*(1+gpc(gp,2))*(1-gpc(gp,3)),(1-gpc(gp,1))*(1+gpc(gp,2))*(1-gpc(gp,3)), &
+                                // (1-gpc(gp,1))*(1-gpc(gp,2))*(1+gpc(gp,3)),(1+gpc(gp,1))*(1+gpc(gp,2))*(1+gpc(gp,3)), &
+                                // (1+gpc(gp,1))*(1+gpc(gp,2))*(1+gpc(gp,3)),(1-gpc(gp,1))*(1+gpc(gp,2))*(1+gpc(gp,3))]
       if (m_dim == 3) {
         for (int gp=0;gp<m_gp_count;gp++){
           
-          dHrs->Set(0,0,-1.0*(1-gpc[gp][1])*(1.0-gpc[gp][2]));  dHrs->Set(1,0,-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][2])); dHrs->Set(2,0,-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1]));
-          dHrs->Set(0,1,(1-gpc[gp][1])*(1.0-gpc[gp][2]));       dHrs->Set(1,1,-1.0*(1+gpc[gp][0])*(1.0-gpc[gp][2])); dHrs->Set(2,1,-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1]));
+          dHrs->Set(0,0,-1.0*(1-gpc[gp][1])*(1.0-gpc[gp][2]));  dHrs->Set(1,0,-1.0*(1+gpc[gp][0])*(1.0-gpc[gp][2])); dHrs->Set(2,0,-1.0*(1+gpc[gp][0])*(1.0-gpc[gp][1])); //dh1/d(r,s,t)
+          dHrs->Set(0,1,     (1-gpc[gp][1])*(1.0-gpc[gp][2]));  dHrs->Set(1,1,-1.0*(1+gpc[gp][0])*(1.0-gpc[gp][2])); dHrs->Set(2,1,-1.0*(1-gpc[gp][0])*(1.0-gpc[gp][1])); //dh2/d(r,s,t)
 					
-					dHrs->Set(0,2,(1+gpc[gp][1])*(1.0-gpc[gp][2]));       dHrs->Set(1,2,(1+gpc[gp][0])*(1.0-gpc[gp][2])); dHrs->Set(2,2,-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]));
-					dHrs->Set(0,3,(1+gpc[gp][1])*(1.0-gpc[gp][2]));       dHrs->Set(1,3,(1-gpc[gp][0])*(1.0-gpc[gp][2])); dHrs->Set(2,3,-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]));
+					dHrs->Set(0,2,     (1+gpc[gp][1])*(1.0-gpc[gp][2]));  dHrs->Set(1,2,     (1+gpc[gp][0])*(1.0-gpc[gp][2])); dHrs->Set(2,2,-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]));
+					dHrs->Set(0,3,-1.0*(1+gpc[gp][1])*(1.0-gpc[gp][2]));  dHrs->Set(1,3,     (1-gpc[gp][0])*(1.0-gpc[gp][2])); dHrs->Set(2,3,-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][1]));
+          
+          dHrs->Set(0,4,-1.0*(1-gpc[gp][1])*(1.0+gpc[gp][2]));  dHrs->Set(1,4,-1.0*(1-gpc[gp][0])*(1.0+gpc[gp][2])); dHrs->Set(2,4,     (1-gpc[gp][0])*(1.0-gpc[gp][1]));
+          dHrs->Set(0,5,     (1-gpc[gp][1])*(1.0+gpc[gp][2]));  dHrs->Set(1,5,-1.0*(1+gpc[gp][0])*(1.0+gpc[gp][2])); dHrs->Set(2,5,     (1+gpc[gp][0])*(1.0-gpc[gp][1]));
+          
+          dHrs->Set(0,6,     (1+gpc[gp][1])*(1.0+gpc[gp][2]));  dHrs->Set(1,6,     (1+gpc[gp][0])*(1.0+gpc[gp][2])); dHrs->Set(2,6,     (1+gpc[gp][0])*(1.0+gpc[gp][1]));
+          dHrs->Set(0,7,-1.0*(1+gpc[gp][1])*(1.0+gpc[gp][2]));  dHrs->Set(1,7,     (1-gpc[gp][0])*(1.0+gpc[gp][2])); dHrs->Set(2,7,     (1-gpc[gp][0])*(1.0+gpc[gp][1]));
 					
           // dHrs(1,:)=[-1.0*(1-gpc(gp,2))*(1.0-gpc(gp,3)),     (1-gpc(gp,2))*(1.0-gpc(gp,3))&
                     // ,     (1+gpc(gp,2))*(1.0-gpc(gp,3)),-1.0*(1+gpc(gp,2))*(1.0-gpc(gp,3))&
@@ -324,18 +335,17 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
 
 					//*jacob = 0.125 * MatMul(*dHrs,*x2);
           MatMul(*dHrs,*x2,jacob);
-          printf("jacob\n");
+          printf("x2\n");
           //m_jacob[e].Print();
 
           x2->Print();
-          jacob->Print();
           jacob->Mul(0.125);
-
+          printf("jacob\n");jacob->Print();
           // jacob->Print();
           //printf("Jacobian: \n");jacob->Print();
            printf("dHrs\n"); dHrs->Print();
           
-        }
+        }// gp
       } else { //!dim =2
         // do gp = 1,4
           // dHrs(1,:)=[-1.0*(1-gpc(gp,2)),     (1-gpc(gp,2))&
@@ -343,9 +353,18 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           // dHrs(2,:)=[-1.0*(1-gpc(gp,1)),-1.0*(1+gpc(gp,1))&
                          // ,(1+gpc(gp,1)),     (1-gpc(gp,1))]  
 					for (int gp=0;gp<m_gp_count;gp++){										
-						dHrs->Set(0,0,-1.0*(1-gpc[gp][1])); dHrs->Set(0,1,(1-gpc[gp][1]));      dHrs->Set(0,2,1+gpc[gp][1]);    dHrs->Set(0,3,-1.0*(1+gpc[gp][1]));
-						dHrs->Set(1,0,-1.0*(1-gpc[gp][0])); dHrs->Set(1,1,-1.0*(1+gpc[gp][0])); dHrs->Set(1,2,(1+gpc[gp][0]));  dHrs->Set(1,3,(1-gpc[gp][0]));
+						dHrs->Set(0,0,-1.0*(1-gpc[gp][1])); dHrs->Set(0,1,     (1-gpc[gp][1])); dHrs->Set(0,2, 1+gpc[gp][1]);   dHrs->Set(0,3,-1.0*(1+gpc[gp][1]));
+						dHrs->Set(1,0,-1.0*(1-gpc[gp][0])); dHrs->Set(1,1,-1.0*(1+gpc[gp][0])); dHrs->Set(1,2,(1+gpc[gp][0]));  dHrs->Set(1,3,     (1-gpc[gp][0]));
 					}
+					//*jacob = 0.125 * MatMul(*dHrs,*x2);
+          MatMul(*dHrs,*x2,jacob);
+          printf("jacob\n");
+          //m_jacob[e].Print();
+
+          x2->Print();
+          jacob->Print();
+          jacob->Mul(0.125);
+          
           // elem%dHrs(e,gp,:,:) =  dHrs(:,:)         
           // !dHrs(2,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))]         
           // !dHrs(3,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))] 
