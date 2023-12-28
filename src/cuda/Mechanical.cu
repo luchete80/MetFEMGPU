@@ -117,15 +117,17 @@ namespace MetFEM {
       // !print *, "standard stran rate calc (matricial) "
 
       double f = 1.0 / m_detJ[offset + gp];
-      
       for (int n=0; n<m_nodxelem;n++) {
+        double3 vele3 = getVElem(e,n);
+        double vele[3];
+        vele[0] = vele3.x;        vele[1] = vele3.y;        vele[2] = vele3.z;
         // do d=1, dim
           // !print *, "node dim dHxy vele", n,d,temp(d,n) , elem%vele (e,dim*(n-1)+d,1) 
           // elem%str_rate(e,gp, d,d) = elem%str_rate(e,gp, d,d) + temp(d,n) * elem%vele (e,dim*(n-1)+d,1) 
           // elem%rot_rate(e,gp, d,d) = 0.0d0
         // end do
         for (int d=0;d<m_dim;d++){
-          str_rate->Set(d,d, str_rate->getVal(d,d) + getDerivative(e,gp,d,n) * f);
+          str_rate->Set(d,d, str_rate->getVal(d,d) + getDerivative(e,gp,d,n) * f * vele[d]);
           // elem%str_rate(e,gp, d,d) = elem%str_rate(e,gp, d,d) + temp(d,n) * elem%vele (e,dim*(n-1)+d,1) 
           // elem%rot_rate(e,gp, d,d) = 0.0d0
         }//dim

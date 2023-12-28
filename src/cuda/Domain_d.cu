@@ -25,7 +25,9 @@ void Domain_d::SetDimension(const int &node_count, const int &elem_count){
   cudaMalloc((void **)&m_dH_detJ_dy, m_nodxelem * m_elem_count * m_gp_count * sizeof (double));  
   cudaMalloc((void **)&m_dH_detJ_dz, m_nodxelem * m_elem_count * m_gp_count * sizeof (double));  
   
-  cudaMalloc((void **)&m_detJ, m_elem_count * m_gp_count * sizeof (double)); 
+  cudaMalloc((void **)&m_detJ,  m_elem_count * m_gp_count * sizeof (double)); 
+  
+  cudaMalloc((void **)&m_elnod, m_elem_count * m_nodxelem * sizeof (double));
   
 	report_gpu_mem_();
 
