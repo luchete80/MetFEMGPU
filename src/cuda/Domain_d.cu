@@ -18,6 +18,15 @@ void Domain_d::SetDimension(const int &node_count, const int &elem_count){
 	cudaMalloc((void **)&v, node_count * sizeof (double3));
 	cudaMalloc((void **)&a, node_count * sizeof (double3));
 	
+  /// MATRICES ///
+  /// dHxy_detJ: DIM X NODXELEM
+  /// TO AVOID EXCESSIVE OFFSET, SPLIT DIMENSIONS
+  cudaMalloc((void **)&m_dH_detJ_dx, m_nodxelem * m_elem_count * m_gp_count * sizeof (double));
+  cudaMalloc((void **)&m_dH_detJ_dy, m_nodxelem * m_elem_count * m_gp_count * sizeof (double));  
+  cudaMalloc((void **)&m_dH_detJ_dz, m_nodxelem * m_elem_count * m_gp_count * sizeof (double));  
+  
+  cudaMalloc((void **)&m_detJ, m_elem_count * m_gp_count * sizeof (double)); 
+  
 	report_gpu_mem_();
 
 }
@@ -224,9 +233,11 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
   Matrix *dHrs = new Matrix(m_dim, m_nodxelem);   /////////////////////////////// IF CREATION IS DYNAMIC ! (TEST IF )
   
   Matrix *dHxy_detJ_loc = new Matrix(m_dim, m_nodxelem);
+  
    
 	//printf ("e %d, elem_count %d\n",m_elem_count);
   if (e < m_elem_count) {
+  int offset = m_gp_count * e;
   // integer :: e
   // ! !rg=gauss[ig]
   // ! !sg=gauss[jg]
@@ -352,6 +363,10 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           printf("inv j\n");inv_j->Print();
           MatMul(*inv_j,*dHrs,dHxy_detJ_loc);
           
+          m_detJ[offset + m_gp_count * gp] = jacob->calcDet();
+          
+          //TRY WITHOUT ALLOCATING
+          
           // invJ = adj(elem%jacob(e,gp,:,:))!!!!/elem%detJ(e,gp) !!!! ALREADY CALCULATED    
           // !print *, "detJ", elem%detJ(e,gp)
           // !print *, "invJ", invJ
@@ -377,6 +392,8 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           jacob->Print();
           jacob->Mul(0.125);
           
+          //m_detJ[offset + m_gp_count * gp] = det(*jacob);
+          
           // elem%dHrs(e,gp,:,:) =  dHrs(:,:)         
           // !dHrs(2,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))]         
           // !dHrs(3,:)=[(1+r(i)), (1-r(i)),-(1-r(i)),-(1+r(i))] 
@@ -399,6 +416,14 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
   } // e < elem_colunt
   
       delete dHrs,x2, jacob;
+}
+
+__device__ double & Domain_d::getDerivative(const int &e, const int &gp, const int &i, const int &j){
+  int offset = m_nodxelem * m_gp_count;
+  //if (e < m_elem_count) {
+      return m_dH_detJ_dx[e*offset + gp * m_gp_count + i];
+  //}
+  //return ret;
 }
 
 

@@ -98,18 +98,26 @@ namespace MetFEM {
 
   int e = threadIdx.x + blockDim.x*blockIdx.x;
   Matrix *str_rate = new Matrix(m_dim,m_dim); //TODO: MAKE SYMM MATRIX
+  //Matrix *dHxy_detJ_loc = new Matrix(m_dim, m_nodxelem);
+
   if (e < m_elem_count) {
     for (int gp=0;gp<m_gp_count;gp++){
+      int offset = e * m_gp_count;
   // elem%str_rate = 0.0d0
   // elem%rot_rate = 0.0d0
   
-
+      // for (int i=0;i<m_nodxelem;i++ ) {
+        // dHxy_detJ_loc->Set(0,i,m_dH_detJ_dx[e*offset + gp * m_gp_count + i]);
+        // dHxy_detJ_loc->Set(1,i,m_dH_detJ_dx[e*offset + gp * m_gp_count + i]);
+        // dHxy_detJ_loc->Set(2,i,m_dH_detJ_dx[e*offset + gp * m_gp_count + i]);
+      // }
       // f = 1.0d0/elem%detJ(e,gp)
       // temp = elem%dHxy_detJ(e,gp,:,:) * f!!!!TODO: MODIFY BY MULTIPLYING
       // elem%strain(e,gp,:,:) = matmul(elem%bl(e,gp,:,:),elem%uele (e,:,:)) 
       // !print *, "standard stran rate calc (matricial) "
 
-
+      double f = 1.0 / m_detJ[offset + gp];
+      
       for (int n=0; n<m_nodxelem;n++) {
         // do d=1, dim
           // !print *, "node dim dHxy vele", n,d,temp(d,n) , elem%vele (e,dim*(n-1)+d,1) 
@@ -117,7 +125,7 @@ namespace MetFEM {
           // elem%rot_rate(e,gp, d,d) = 0.0d0
         // end do
         for (int d=0;d<m_dim;d++){
-          
+          str_rate->Set(d,d, str_rate->getVal(d,d) + getDerivative(e,gp,d,n) * f);
           // elem%str_rate(e,gp, d,d) = elem%str_rate(e,gp, d,d) + temp(d,n) * elem%vele (e,dim*(n-1)+d,1) 
           // elem%rot_rate(e,gp, d,d) = 0.0d0
         }//dim

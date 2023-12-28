@@ -17,11 +17,16 @@ public:
 
 	__device__ void calcElemStrains();
   
+  __device__ double & getDerivative(const int &e, const int &gp, const int &i, const int &j); //I AND J ARE: DIMENSION AND NODE
+  
 	int threadsPerBlock, blocksPerGrid; //TO BE USED BY SOLVER
 	
 	const int & getElemCount()const{return m_elem_count;}
 	const int & getNodeCount()const{return m_node_count;}
 	
+  __device__ double & getVElem(const int &e, const int &n){return v[]}
+  
+  
 	void SolveChungHulbert();
 	
 protected:
@@ -53,11 +58,12 @@ protected:
   //Updated lagrangian formulation
   //real(fp_kind), dimension(:,:,:,:), allocatable :: BL,BNL, jacob, dHxy,dHxy_detJ, dHxy0,math, dHrs !!!DIM: e,gp,,:,:, is it necesary to store dHrs??? is only because is used twice, at J and dHxy
   double         *dHxy_detJ ; //
+  double         *m_detJ;
   
   ////// THESE ARE SUBDIVIDED FOR HIGHER ACCESS SPEED (LOWER OFFSET)
-  double         *dH_dx ; //GAUSS_POINT
-  double         *dH_dy ; 	
-  double         *dH_dz ; 
+  double         *m_dH_detJ_dx ; //GAUSS_POINT, AGRUPATED BY ELEM 1 GP1, ELEM 1 GP 2 .... ELEM 2 GP 1..
+  double         *m_dH_detJ_dy ; 	
+  double         *m_dH_detJ_dz ; 
 	
 	double					Time;    				//Current time of simulation at each solving step
 	double					deltat;					//Time Step
