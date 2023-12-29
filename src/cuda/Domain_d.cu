@@ -15,8 +15,10 @@ void Domain_d::SetDimension(const int &node_count, const int &elem_count){
   m_elem_count = elem_count;
   
 	cudaMalloc((void **)&x, node_count * sizeof (double3));
-	cudaMalloc((void **)&v, node_count * sizeof (double3));
+	cudaMalloc((void **)&v, node_count * sizeof (double) * 3);
 	cudaMalloc((void **)&a, node_count * sizeof (double3));
+
+	cudaMalloc((void **)&m_f, node_count * sizeof (double) * 3);
 	
   /// MATRICES ///
   /// dHxy_detJ: DIM X NODXELEM
@@ -26,6 +28,9 @@ void Domain_d::SetDimension(const int &node_count, const int &elem_count){
   cudaMalloc((void **)&m_dH_detJ_dz, m_nodxelem * m_elem_count * m_gp_count * sizeof (double));  
   
   cudaMalloc((void **)&m_detJ,  m_elem_count * m_gp_count * sizeof (double)); 
+  
+  cudaMalloc((void **)&m_str_rate, m_elem_count * m_gp_count * 6 * sizeof (double)); 
+  cudaMalloc((void **)&m_rot_rate, m_elem_count * m_gp_count * 6 * sizeof (double)); 
   
 	report_gpu_mem_();
 
@@ -418,9 +423,9 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
 }
 
 __device__ double & Domain_d::getDerivative(const int &e, const int &gp, const int &i, const int &j){
-  int offset = m_nodxelem * m_gp_count;
+  //int offset = m_nodxelem * m_gp_count;
   //if (e < m_elem_count) {
-      return m_dH_detJ_dx[e*offset + gp * m_gp_count + i];
+      return m_dH_detJ_dx[e*(m_nodxelem * m_gp_count) + gp * m_gp_count + i];
   //}
   //return ret;
 }

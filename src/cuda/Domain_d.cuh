@@ -16,6 +16,7 @@ public:
   __device__ void calcElemJAndDerivatives/*_FullInt*/();
 
 	__device__ void calcElemStrains();
+  __device__ void calcElemForces();
   
   __device__ double & getDerivative(const int &e, const int &gp, const int &i, const int &j); //I AND J ARE: DIMENSION AND NODE
   
@@ -54,7 +55,9 @@ protected:
   
   Matrix          *m_jacob;
   
-  double          *m_strain_rate;
+  double          *m_str_rate, *m_rot_rate;
+  double          *m_f_elem;  //Necesary?
+  double          *m_f;       //NODAL
 	
   //Updated lagrangian formulation
   //real(fp_kind), dimension(:,:,:,:), allocatable :: BL,BNL, jacob, dHxy,dHxy_detJ, dHxy0,math, dHrs !!!DIM: e,gp,,:,:, is it necesary to store dHrs??? is only because is used twice, at J and dHxy

@@ -47,6 +47,10 @@ public:
                        free(m_data);}
 	
 	__spec double calcDet();
+  
+  __spec void ToFlatSymPtr(double *flat, int initial);
+  
+  
 
 	double *m_data;
   int m_row, m_col, m_dim;
@@ -228,6 +232,15 @@ __spec void InvMat(Matrix &A, Matrix *invA){
     delete cofactor;
   }
   
+}
+
+__spec void Matrix::ToFlatSymPtr(double *flat, int initial){
+	flat [initial + 0] = getVal(0,0); 
+  flat [initial + 1] = getVal(1,1); 
+  flat [initial + 2] = getVal(2,2);
+  flat [initial + 3] = getVal(0,1);
+  flat [initial + 4] = getVal(1,2);
+  flat [initial + 5] = getVal(0,2);
 }
 
 // function invmat (a)
