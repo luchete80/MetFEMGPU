@@ -27,8 +27,6 @@ void Domain_d::SetDimension(const int &node_count, const int &elem_count){
   
   cudaMalloc((void **)&m_detJ,  m_elem_count * m_gp_count * sizeof (double)); 
   
-  cudaMalloc((void **)&m_elnod, m_elem_count * m_nodxelem * sizeof (double));
-  
 	report_gpu_mem_();
 
 }
@@ -189,10 +187,9 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
 
 		}//if dim 
 		
-    cudaMalloc((void **)&m_elnod, m_elem_count * m_nodxelem * sizeof (double3));
 		cudaMemcpy(this->m_elnod, elnod_h, sizeof(double) * m_elem_count * m_nodxelem, cudaMemcpyHostToDevice);    
     
-
+    cudaMalloc((void **)&m_elnod, m_elem_count * m_nodxelem * sizeof (int));
     cudaMalloc(&m_jacob,m_elem_count * sizeof(Matrix ));
     
     // call AllocateDomain()

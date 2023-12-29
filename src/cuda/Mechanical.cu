@@ -119,28 +119,32 @@ namespace MetFEM {
 
       double f = 1.0 / m_detJ[offset + gp];
       for (int n=0; n<m_nodxelem;n++) {
-        double3 vele3 = getVElem(e,n);
-        double vele[3];
-        vele[0] = vele3.x;        vele[1] = vele3.y;        vele[2] = vele3.z;
+        // double vele[3];
+        // vele[0] = vele3.x;        vele[1] = vele3.y;        vele[2] = vele3.z;
         // do d=1, dim
           // !print *, "node dim dHxy vele", n,d,temp(d,n) , elem%vele (e,dim*(n-1)+d,1) 
           // elem%str_rate(e,gp, d,d) = elem%str_rate(e,gp, d,d) + temp(d,n) * elem%vele (e,dim*(n-1)+d,1) 
           // elem%rot_rate(e,gp, d,d) = 0.0d0
         // end do
         for (int d=0;d<m_dim;d++){
-          str_rate->Set(d,d, str_rate->getVal(d,d) + getDerivative(e,gp,d,n) * f * vele[d]);
+          str_rate->Set(d,d, str_rate->getVal(d,d) + getDerivative(e,gp,d,n) * f * getVElem(e,n,d));
           // elem%str_rate(e,gp, d,d) = elem%str_rate(e,gp, d,d) + temp(d,n) * elem%vele (e,dim*(n-1)+d,1) 
           // elem%rot_rate(e,gp, d,d) = 0.0d0
         }//dim
         // !!!! TO AVOID ALL MATMULT
-        str_rate->Set(1,2, str_rate->getVal(1,2) + f *(getDerivative(e,gp,2,n) * vele[0] +
-                                                       getDerivative(e,gp,1,n) * vele[0]));
-        //rot_rate->Set(1,2, rot_rate->getVal(1,2) + getDerivative(e,gp,2,n) * f * vele[0]);
+        str_rate->Set(0,1, str_rate->getVal(0,1) + f *(getDerivative(e,gp,1,n) * getVElem(e,n,0) +
+                                                       getDerivative(e,gp,0,n) * getVElem(e,n,1)));
+        rot_rate->Set(0,1, rot_rate->getVal(0,1) + f* (getDerivative(e,gp,1,n) * getVElem(e,n,0) - );
+                                                       getDerivative(e,gp,0,n) * getVElem(e,n,1)));
         // elem%str_rate(e,gp, 1,2) = elem%str_rate(e,gp, 1,2) + temp(2,n)* elem%vele (e,dim*(n-1)+1,1) &!!!!dvx/dy
                                    // + temp(1,n) * elem%vele (e,dim*(n-1)+2,1)
         // elem%rot_rate(e,gp, 1,2) = elem%rot_rate(e,gp, 1,2) + temp(2,n)* elem%vele (e,dim*(n-1)+1,1) & !!!!dvx/dx
                                    // - temp(1,n) * elem%vele (e,dim*(n-1)+2,1)                           !!!!
-        // if (dim == 3) then
+        if (m_dim == 3) {
+          str_rate->Set(1,2, str_rate->getVal(1,2) + f *(getDerivative(e,gp,1,n) * getVElem(e,n,0) +
+                                                         getDerivative(e,gp,0,n) * getVElem(e,n,1)));
+          str_rate->Set(0,2, str_rate->getVal(0,2) + f *(getDerivative(e,gp,2,n) * getVElem(e,n,0) +
+                                                         getDerivative(e,gp,0,n) * getVElem(e,n,2)));
           // elem%str_rate(e,gp, 2,3) = elem%str_rate(e,gp, 2,3) + temp(3,n)* elem%vele (e,dim*(n-1)+2,1) &!!!d/dz*vy     
                                      // + temp(2,n) * elem%vele (e,dim*(n-1)+3,1)    !!!d/dy*vz
           // elem%str_rate(e,gp, 1,3) = elem%str_rate(e,gp, 1,3) + temp(3,n)* elem%vele (e,dim*(n-1)+1,1) & !!!d/dz*vx     
@@ -149,9 +153,10 @@ namespace MetFEM {
                                      // - temp(2,n) * elem%vele (e,dim*(n-1)+3,1)    !!!d/dy*vz
           // elem%rot_rate(e,gp, 1,3) = elem%rot_rate(e,gp, 1,3) + temp(3,n)* elem%vele (e,dim*(n-1)+1,1) & !!!d/dz*vx     
                                      // - temp(1,n) * elem%vele (e,dim*(n-1)+3,1)    !!!d/dx*vz    
-        // end if     
+        }// end if     
       }// end do !Nod x elem
       
+      //str_rate->
       // elem%str_rate(e,gp, 1,2) = 0.5 * elem%str_rate(e,gp, 1,2); 
       // elem%rot_rate(e,gp, 1,2) = 0.5 * elem%rot_rate(e,gp, 1,2)      
 

@@ -24,8 +24,8 @@ public:
 	const int & getElemCount()const{return m_elem_count;}
 	const int & getNodeCount()const{return m_node_count;}
 	
-  __device__ double3 & getVElem(const int &e, const int &n){return v[m_elnod[e*m_nodxelem+n]];}
-  
+  //__device__ double3 & getVElem(const int &e, const int &n){return v[m_elnod[e*m_nodxelem+n]];}
+  inline __device__ double  getVElem(const int &e, const int &n,const int &d){return v[m_elnod[n]+d];}  
   
 	void SolveChungHulbert();
 	
@@ -34,9 +34,10 @@ protected:
   int             m_node_count, m_elem_count;
 	
 	unsigned int 		*m_elnod;
+  //unsigned int    *m_eloffset; //FROM FIRST ELEMENT NODE
 	
 	double3* 				x; //Vector is double
-	double3* 				v;
+	double* 				v; //CHANGED TO DOUBLE
 	double3* 				a;
 	double3* 				u;
 
