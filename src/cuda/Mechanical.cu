@@ -207,7 +207,6 @@ __device__ void Domain_d::calcElemForces(){
   int e = threadIdx.x + blockDim.x*blockIdx.x;  
   if (e < m_elem_count) {
     for (int gp=0;gp<m_gp_count;gp++){
-      int offset = e * m_gp_count + gp;
 	
   // integer :: e, i,j,k, gp,n, d
   // real(fp_kind), dimension(dim*nodxelem,1) ::f
@@ -234,6 +233,7 @@ __device__ void Domain_d::calcElemForces(){
       // !print *, "dHdxy, 1", elem%dHxy_detJ(e,gp,1,:)
       // !print *, "dHdxy, 2", elem%dHxy_detJ(e,gp,2,:)
       // !print *, "dHdxy, 3", elem%dHxy_detJ(e,gp,1,:)
+      int offset = e*m_nodxelem*m_dim;
       
       // do n=1, nodxelem
       // !Is only linear matrix?    
@@ -244,6 +244,11 @@ __device__ void Domain_d::calcElemForces(){
       // !!!!!                = [dh2/dx dh2/dy ]   [ syx syy]
       // !!!!! 
         // do d=1, dim
+      for (int n=0; n<m_nodxelem;n++) {
+        for (int d=0;d<m_dim;d++){
+          m_f_elem[offset + n*m_dim + d] += getDerivative(e,gp,d,n);
+        }
+      }
           // elem%f_int(e,n,d) = elem%f_int(e,n,d) + elem%dHxy_detJ(e,gp,d,n) * elem%sigma (e,gp, d,d)
         // end do
         // if (dim .eq. 2) then  !!!!! TODO: CHANGE WITH BENSON 1992 - EQ 2.4.2.11 FOR SIMPLICITY

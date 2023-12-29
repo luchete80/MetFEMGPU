@@ -2,6 +2,7 @@
 #define _DOMAIN_D_CUH_
 
 #include <cuda.h>
+#include <stdio.h>
 #include "cudautils.cuh"
 
 class Matrix;
@@ -20,7 +21,7 @@ public:
 
   __device__ void assemblyForces();
   
-  __device__ double & getDerivative(const int &e, const int &gp, const int &i, const int &j); //I AND J ARE: DIMENSION AND NODE
+  inline __device__ double & getDerivative(const int &e, const int &gp, const int &i, const int &j); //I AND J ARE: DIMENSION AND NODE
   
 	int threadsPerBlock, blocksPerGrid; //TO BE USED BY SOLVER
 	
@@ -85,6 +86,12 @@ __global__ void calcElemStrainsKernel(Domain_d *dom_d);
 
 __global__ void assemblyForcesKernel(Domain_d *dom_d);
 
-}; //Namespace
+inline __device__ double & Domain_d::getDerivative(const int &e, const int &gp, const int &i, const int &j){ //I AND J ARE: DIMENSION AND NODE
+      if (i == 0)     return m_dH_detJ_dx[e*(m_nodxelem * m_gp_count) + gp * m_gp_count + i];
+      else if (i==1)  return m_dH_detJ_dx[e*(m_nodxelem * m_gp_count) + gp * m_gp_count + i];
+      else if (i==2)  return m_dH_detJ_dx[e*(m_nodxelem * m_gp_count) + gp * m_gp_count + i];
+      else printf ("ERROR: WROWNG DERIVATIVE DIMENSION.");
+}
 
+}; //Namespace
 #endif

@@ -422,13 +422,13 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
       delete dHrs,x2, jacob;
 }
 
-__device__ double & Domain_d::getDerivative(const int &e, const int &gp, const int &i, const int &j){
-  //int offset = m_nodxelem * m_gp_count;
-  //if (e < m_elem_count) {
-      return m_dH_detJ_dx[e*(m_nodxelem * m_gp_count) + gp * m_gp_count + i];
-  //}
-  //return ret;
-}
+// __device__ double & Domain_d::getDerivative(const int &e, const int &gp, const int &i, const int &j){
+  // //int offset = m_nodxelem * m_gp_count;
+  // //if (e < m_elem_count) {
+      // return m_dH_detJ_dx[e*(m_nodxelem * m_gp_count) + gp * m_gp_count + i];
+  // //}
+  // //return ret;
+// }
 
 
 __global__ void calcElemJAndDerivKernel(Domain_d *dom_d){
