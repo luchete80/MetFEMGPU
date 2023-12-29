@@ -40,11 +40,15 @@ add_executable(MetFEMGPU
                           # Mesh.cpp
                           main.cu
 													cuda/Domain_d.cu
+                          cuda/Matrices.cu
                           cuda/Mechanical.cu
                           cuda/cudautils.cu
 													cuda/Solver.cu
 
               )
+
+#THIS SHOULD BE SET GREATER THAN 60 DUE TO CUDA ADDATOMIC
+set_property(TARGET MetFEMGPU PROPERTY CUDA_ARCHITECTURES 60)
 
 # add_executable(main_thermal 
 													# main_thermal.cu

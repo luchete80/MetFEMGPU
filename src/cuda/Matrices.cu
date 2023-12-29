@@ -1,5 +1,8 @@
 #include "Domain_d.cuh"
 
+#include <cuda_runtime.h>
+
+namespace MetFEM {
   
 // __global__ void histogram(int* color, int* buckets)
 // {
@@ -9,6 +12,15 @@
 // }
 
 __device__ void Domain_d::assemblyForces(){
+
+  int e = threadIdx.x + blockDim.x*blockIdx.x;
+  if (e < m_elem_count) {
+    for (int n=0; n<m_nodxelem;n++) {
+      for (int d=0;d<m_dim;d++){
+        atomicAdd(&m_f[m_elnod[n]*m_dim + d], m_f_elem[e*m_nodxelem*m_dim + n*m_dim + d]);
+      }
+    }
+  } // element
   
 // subroutine assemble_forces()
   // integer :: e, i, n, iglob
@@ -37,5 +49,7 @@ __device__ void Domain_d::assemblyForces(){
     // end if 
   // end do ! e
 // end subroutine 
+
+}
 
 }
