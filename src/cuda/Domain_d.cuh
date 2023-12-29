@@ -17,6 +17,8 @@ public:
 
 	__device__ void calcElemStrains();
   __device__ void calcElemForces();
+
+  __device__ void assemblyForces();
   
   __device__ double & getDerivative(const int &e, const int &gp, const int &i, const int &j); //I AND J ARE: DIMENSION AND NODE
   
@@ -80,6 +82,8 @@ protected:
 
 __global__ void calcElemJAndDerivKernel(Domain_d *dom_d);
 __global__ void calcElemStrainsKernel(Domain_d *dom_d);
+
+__global__ void assemblyForcesKernel(Domain_d *dom_d);
 
 }; //Namespace
 
