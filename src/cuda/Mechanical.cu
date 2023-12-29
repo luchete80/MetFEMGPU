@@ -98,6 +98,7 @@ namespace MetFEM {
 
   int e = threadIdx.x + blockDim.x*blockIdx.x;
   Matrix *str_rate = new Matrix(m_dim,m_dim); //TODO: MAKE SYMM MATRIX
+  Matrix *rot_rate = new Matrix(m_dim,m_dim); //TODO: MAKE SYMM MATRIX
   //Matrix *dHxy_detJ_loc = new Matrix(m_dim, m_nodxelem);
 
   if (e < m_elem_count) {
@@ -132,6 +133,9 @@ namespace MetFEM {
           // elem%rot_rate(e,gp, d,d) = 0.0d0
         }//dim
         // !!!! TO AVOID ALL MATMULT
+        str_rate->Set(1,2, str_rate->getVal(1,2) + f *(getDerivative(e,gp,2,n) * vele[0] +
+                                                       getDerivative(e,gp,1,n) * vele[0]));
+        //rot_rate->Set(1,2, rot_rate->getVal(1,2) + getDerivative(e,gp,2,n) * f * vele[0]);
         // elem%str_rate(e,gp, 1,2) = elem%str_rate(e,gp, 1,2) + temp(2,n)* elem%vele (e,dim*(n-1)+1,1) &!!!!dvx/dy
                                    // + temp(1,n) * elem%vele (e,dim*(n-1)+2,1)
         // elem%rot_rate(e,gp, 1,2) = elem%rot_rate(e,gp, 1,2) + temp(2,n)* elem%vele (e,dim*(n-1)+1,1) & !!!!dvx/dx
