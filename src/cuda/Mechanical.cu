@@ -246,7 +246,7 @@ __device__ void Domain_d::calcElemForces(){
         // do d=1, dim
       for (int n=0; n<m_nodxelem;n++) {
         for (int d=0;d<m_dim;d++){
-          m_f_elem[offset + n*m_dim + d] += getDerivative(e,gp,d,n);
+          m_f_elem[offset + n*m_dim + d] += getDerivative(e,gp,d,n) ;
         }
       }
           // elem%f_int(e,n,d) = elem%f_int(e,n,d) + elem%dHxy_detJ(e,gp,d,n) * elem%sigma (e,gp, d,d)
