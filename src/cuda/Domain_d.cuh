@@ -7,7 +7,6 @@
 
 class Matrix;
 
-int symm_idx[3][3] = {{0,3,4},{3,1,5},{4,5,2}};
 
 namespace MetFEM{
 class Domain_d {
@@ -30,7 +29,7 @@ public:
 	const int & getElemCount()const{return m_elem_count;}
 	const int & getNodeCount()const{return m_node_count;}
   
-  inline __device__ double & getSigma(const int &e, const int &gp, const int &i, const int &j){if (j<m_dim) return m_sigma[e*m_gp_count+symm_idx[i][j]];}
+  inline __device__ double & getSigma(const int &e, const int &gp, const int &i, const int &j){if (j<m_dim) return m_sigma[e*m_gp_count*6 + symm_idx[i][j]];}
 	
   //__device__ double3 & getVElem(const int &e, const int &n){return v[m_elnod[e*m_nodxelem+n]];}
   inline __device__ double  getVElem(const int &e, const int &n,const int &d){return v[m_elnod[n]+d];}  
@@ -38,6 +37,7 @@ public:
 	void SolveChungHulbert();
 	
 protected:
+  int symm_idx[3][3] = {{0,3,4},{3,1,5},{4,5,2}};
 	int 						m_dim;
   int             m_node_count, m_elem_count;
 	

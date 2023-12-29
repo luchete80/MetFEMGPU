@@ -6,7 +6,6 @@
 // #include "tensor.cu"
 #include "Matrix.cuh"
 
-
 using namespace std;
 
 namespace MetFEM {
@@ -234,6 +233,7 @@ __device__ void Domain_d::calcElemForces(){
       // !print *, "dHdxy, 2", elem%dHxy_detJ(e,gp,2,:)
       // !print *, "dHdxy, 3", elem%dHxy_detJ(e,gp,1,:)
       int offset = e*m_nodxelem*m_dim;
+      int sig_offset = m_elem_count * m_gp_count * 6;
       
       // do n=1, nodxelem
       // !Is only linear matrix?    
@@ -246,7 +246,7 @@ __device__ void Domain_d::calcElemForces(){
         // do d=1, dim
       for (int n=0; n<m_nodxelem;n++) {
         for (int d=0;d<m_dim;d++){
-          m_f_elem[offset + n*m_dim + d] += getDerivative(e,gp,d,n) ;
+          m_f_elem[offset + n*m_dim + d] += getDerivative(e,gp,d,n) * getSigma(e,gp,d,d);
         }
       }
           // elem%f_int(e,n,d) = elem%f_int(e,n,d) + elem%dHxy_detJ(e,gp,d,n) * elem%sigma (e,gp, d,d)
