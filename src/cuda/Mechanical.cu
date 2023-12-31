@@ -332,5 +332,121 @@ __device__ void Domain_d::calcElemPressure(){
 // end subroutine 
   } // e< elem_count
 }
+
+
+// //////////////////////////////////////////////////////////////////////
+// __device__ void Domain_d::StressStrain(int i) {
+	
+	// //int i = threadIdx.x + blockDim.x*blockIdx.x;
+	// double dep = 0.;
+  // double Ep;  //STORAGE THIS OR THE TANGENT?
+	
+	// if ( i < solid_part_count ) {	
+		// //Pressure = EOS(PresEq, Cs, P0,Density, RefDensity); //CALL BEFORE!
+
+		// // Jaumann rate terms
+		// tensor3 RotationRateT,SRT,RS;
+		// tensor3 RotationRate;
+		// tensor3 StrainRate;
+		// tensor3 ShearStress;
+		// tensor3 Sigma;
+		// tensor3 Strain,Straina,Strainb;
+		
+		// double temprr[6],tempss[6],tempsr[6];
+		// double tempssa[6],tempssb[6];
+		// for (int k=0;k<6;k++){ //First the diagonal
+			// temprr[k] = rotrate[6*i+k];
+			// tempss[k] = shearstress[6*i+k];
+			// tempsr[k] = strrate[6*i+k];
+		// }
+		// ShearStress   = FromFlatSym (tempss);	
+		// StrainRate    = FromFlatSym(tempsr);
+		// RotationRate  = FromFlatAntiSym(temprr);
+   // // printf(" Strain rate xx %f \n",StrainRate.zz);
+		// RotationRateT = Trans(RotationRate);
+		
+		// SRT = ShearStress * RotationRateT;
+		// RS = RotationRate * ShearStress;
+
+		// ShearStress	= deltat*(2.0*G[i]*(StrainRate-1.0/3.0*(StrainRate.xx+StrainRate.yy+StrainRate.zz)*Identity())+SRT+RS) + ShearStress;	
+
+    // eff_strain_rate[i] = sqrt ( 	0.5*( (StrainRate.xx-StrainRate.yy)*(StrainRate.xx-StrainRate.yy) +
+                                // (StrainRate.yy-StrainRate.zz)*(StrainRate.yy-StrainRate.zz) +
+                                // (StrainRate.zz-StrainRate.xx)*(StrainRate.zz-StrainRate.xx)) + 
+                          // 3.0 * (StrainRate.xy*StrainRate.xy + StrainRate.yz*StrainRate.yz + StrainRate.zx*StrainRate.zx)
+                        // );
+                        
+		// double J2	= 0.5*(ShearStress.xx*ShearStress.xx + 2.0*ShearStress.xy*ShearStress.yx +
+					// 2.0*ShearStress.xz*ShearStress.zx + ShearStress.yy*ShearStress.yy +
+					// 2.0*ShearStress.yz*ShearStress.zy + ShearStress.zz*ShearStress.zz);
+
+    // //Scale back, Fraser Eqn 3-53
+		// double sig_trial = sqrt(3.0*J2); 
+    // if ( sigma_y[i] < sig_trial ) ShearStress = sigma_y[i]/sig_trial * ShearStress; //Yielding      
+    // //std::min((Sigmay/sqrt(3.0*J2)),1.0)*ShearStressa;
+
+   // if       (mat[i]->Material_model == HOLLOMON )       {
+     
+      // //printf("Hollomon!");
+      // //printf("pl strain %f\n",pl_strain[i]);
+      // //sigma_y[i] = mat [i]->CalcYieldStress(pl_strain[i]);
+      // //ShowProps(mat[i]);
+      // sigma_y[i] = CalcHollomonYieldStress(pl_strain[i],mat [i]);
+      // //printf ("sigma_y %f\n",sigma_y[i]);
+      // //sigma_y[i] = mat [i]->testret();
+      // //(*materials_ptr)->testret();
+      // //sigma_y[i] = mat [i]->CalcYieldStress(pl_strain[i]); 
+    // } 
+		// else if  (mat[i]->Material_model == JOHNSON_COOK )   sigma_y[i] = CalcJohnsonCookYieldStress(pl_strain[i],eff_strain_rate[i],T[i], mat[i]);
+		
+		// sigma_eq[i] = sig_trial;	
+		
+		// if ( sig_trial > sigma_y[i]) {
+      // if              (mat[i]->Material_model == HOLLOMON ) {
+				// Et[i] = CalcHollomonTangentModulus(pl_strain[i],mat[i]); //Fraser 3.54
+				// // Et_m = Et;        
+      // } else if       (mat[i]->Material_model == JOHNSON_COOK ) {
+        // Et[i] = CalcJohnsonCookTangentModulus(pl_strain[i], eff_strain_rate[i], T[i],mat[i]); //Fraser 3.54
+      // } else if       (mat[i]->Material_model == BILINEAR ) {
+        // //Ep = mat->Elastic().E()*Et/(mat->Elastic().E()-Et);
+      // }
+			// if (mat[i]->Material_model > BILINEAR ) {//Else Ep = 0
+        // //cout << "Calculating Ep"<<endl;
+				// Ep = mat[i]->Elastic().E()*Et[i]/(mat[i]->Elastic().E()-Et[i]);
+				// // if (Ep < 0)
+					// // cout << "ATTENTION Material Ep <0 "<<Ep<<", Et" << Et <<", platrain"<<pl_strain<<"effstrrate"<<eff_strain_rate<<endl;
+			// }
+      // if (Ep<0) Ep = 1.*mat[i]->Elastic().E();
+      
+			// dep=( sig_trial - sigma_y[i])/ (3.*G[i] /*+ Ep*/);	//Fraser, Eq 3-49 TODO: MODIFY FOR TANGENT MODULUS = 0
+			// pl_strain[i] += dep;	
+      // //printf("Particle %d, dep %.1e, sigtrial %.1e\n",i,dep,sig_trial);
+			// sigma_eq[i] = sigma_y[i];
+		// }
+
+    // // if (mat[i]->Material_model == BILINEAR )
+      // // sigma_y[i] += dep*mat[i]->Ep;
+    
+		// Sigma = -p[i] * Identity() + ShearStress;	//Fraser, eq 3.32
+
+		// Strain	= deltat * StrainRate + Strain;
+    
+    // // if (mat[i]->Material_model==JOHNSON_COOK){
+      // // printf("JOHNSON_COOK!\n"); //test
+    // // } elsr     
+    // // if (mat[i]->Material_model==HOLLOMON){
+      // // printf("HOLLOMON!\n"); //test
+    // // }    
+    // // if (mat[i]->Material_model==BILINEAR){
+      // // printf("BILINEAR!\n"); //test
+    // // }
+
+		// ///// OUTPUT TO Flatten arrays
+		// ToFlatSymPtr(Sigma, sigma,6*i);  //TODO: CHECK IF RETURN VALUE IS SLOWER THAN PASS AS PARAM		
+		// ToFlatSymPtr(Strain, 	strain,6*i);		
+		// ToFlatSymPtr(ShearStress, shearstress,6*i);
+
+	// }//particle count
+// }
  
 }; //Namespace MetFEM

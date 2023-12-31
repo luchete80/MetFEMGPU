@@ -4,6 +4,7 @@
 #include <cuda.h>
 #include <stdio.h>
 #include "cudautils.cuh"
+#include "Material.cuh"
 
 class Matrix;
 
@@ -52,6 +53,9 @@ protected:
 	double3* 				u;
 
 	double 					*p;
+
+  Material_ **mat; //pointer to material of each particle
+  Material_ *materials; //All materials 
   
   bool            m_red_int;  //Reduced integration, 1 GAUSS POINT
   int             m_gp_count; //Assuming constant gauss points
