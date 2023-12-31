@@ -104,7 +104,7 @@ __device__ void Domain_d::calcElemStrains(){
 
   if (e < m_elem_count) {
     for (int gp=0;gp<m_gp_count;gp++){
-      int offset = e * m_gp_count + gp;
+      int offset = e * m_gp_count * 6 + gp;
   // elem%str_rate = 0.0d0
   // elem%rot_rate = 0.0d0
   
