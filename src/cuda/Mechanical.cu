@@ -243,12 +243,21 @@ __device__ void Domain_d::calcElemForces(){
       // !!!!! F = BT x sigma = [dh1/dx dh1/dy ] x [ sxx sxy]
       // !!!!!                = [dh2/dx dh2/dy ]   [ syx syy]
       // !!!!! 
-        // do d=1, dim
+
       for (int n=0; n<m_nodxelem;n++) {
         for (int d=0;d<m_dim;d++){
           m_f_elem[offset + n*m_dim + d] += getDerivative(e,gp,d,n) * getSigma(e,gp,d,d);
         }
       }
+      if (m_dim == 2){
+        m_f_elem[offset + n*m_dim    ] +=  getDerivative(e,gp,1,n) * getSigma(e,gp,0,1);
+        m_f_elem[offset + n*m_dim + 1] +=  getDerivative(e,gp,0,n) * getSigma(e,gp,0,1);
+      } else {
+        m_f_elem[offset + n*m_dim    ] +=  getDerivative(e,gp,1,n) * getSigma(e,gp,0,1) +
+                                           getDerivative(e,gp,2,n) * getSigma(e,gp,1,2);
+        //m_f_elem[offset + n*m_dim + 1] +=  getDerivative(e,gp,2,n) * getSigma(e,gp,1,2);        
+      }
+        // do d=1, dim
           // elem%f_int(e,n,d) = elem%f_int(e,n,d) + elem%dHxy_detJ(e,gp,d,n) * elem%sigma (e,gp, d,d)
         // end do
         // if (dim .eq. 2) then  !!!!! TODO: CHANGE WITH BENSON 1992 - EQ 2.4.2.11 FOR SIMPLICITY
