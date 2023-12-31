@@ -254,8 +254,11 @@ __device__ void Domain_d::calcElemForces(){
         m_f_elem[offset + n*m_dim + 1] +=  getDerivative(e,gp,0,n) * getSigma(e,gp,0,1);
       } else {
         m_f_elem[offset + n*m_dim    ] +=  getDerivative(e,gp,1,n) * getSigma(e,gp,0,1) +
-                                           getDerivative(e,gp,2,n) * getSigma(e,gp,1,2);
-        //m_f_elem[offset + n*m_dim + 1] +=  getDerivative(e,gp,2,n) * getSigma(e,gp,1,2);        
+                                           getDerivative(e,gp,2,n) * getSigma(e,gp,0,2);
+        m_f_elem[offset + n*m_dim + 1] +=  getDerivative(e,gp,0,n) * getSigma(e,gp,0,1) + 
+                                           getDerivative(e,gp,2,n) * getSigma(e,gp,1,2);        
+        m_f_elem[offset + n*m_dim + 2] +=  getDerivative(e,gp,1,n) * getSigma(e,gp,1,2) + 
+                                           getDerivative(e,gp,0,n) * getSigma(e,gp,0,2);     
       }
         // do d=1, dim
           // elem%f_int(e,n,d) = elem%f_int(e,n,d) + elem%dHxy_detJ(e,gp,d,n) * elem%sigma (e,gp, d,d)
