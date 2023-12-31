@@ -248,17 +248,19 @@ __device__ void Domain_d::calcElemForces(){
         for (int d=0;d<m_dim;d++){
           m_f_elem[offset + n*m_dim + d] += getDerivative(e,gp,d,n) * getSigma(e,gp,d,d);
         }
-      }
-      if (m_dim == 2){
-        m_f_elem[offset + n*m_dim    ] +=  getDerivative(e,gp,1,n) * getSigma(e,gp,0,1);
-        m_f_elem[offset + n*m_dim + 1] +=  getDerivative(e,gp,0,n) * getSigma(e,gp,0,1);
-      } else {
-        m_f_elem[offset + n*m_dim    ] +=  getDerivative(e,gp,1,n) * getSigma(e,gp,0,1) +
-                                           getDerivative(e,gp,2,n) * getSigma(e,gp,0,2);
-        m_f_elem[offset + n*m_dim + 1] +=  getDerivative(e,gp,0,n) * getSigma(e,gp,0,1) + 
-                                           getDerivative(e,gp,2,n) * getSigma(e,gp,1,2);        
-        m_f_elem[offset + n*m_dim + 2] +=  getDerivative(e,gp,1,n) * getSigma(e,gp,1,2) + 
-                                           getDerivative(e,gp,0,n) * getSigma(e,gp,0,2);     
+      
+        if (m_dim == 2){
+          m_f_elem[offset + n*m_dim    ] +=  getDerivative(e,gp,1,n) * getSigma(e,gp,0,1);
+          m_f_elem[offset + n*m_dim + 1] +=  getDerivative(e,gp,0,n) * getSigma(e,gp,0,1);
+        } else {
+          m_f_elem[offset + n*m_dim    ] +=  getDerivative(e,gp,1,n) * getSigma(e,gp,0,1) +
+                                             getDerivative(e,gp,2,n) * getSigma(e,gp,0,2);
+          m_f_elem[offset + n*m_dim + 1] +=  getDerivative(e,gp,0,n) * getSigma(e,gp,0,1) + 
+                                             getDerivative(e,gp,2,n) * getSigma(e,gp,1,2);        
+          m_f_elem[offset + n*m_dim + 2] +=  getDerivative(e,gp,1,n) * getSigma(e,gp,1,2) + 
+                                             getDerivative(e,gp,0,n) * getSigma(e,gp,0,2);     
+        }
+      
       }
         // do d=1, dim
           // elem%f_int(e,n,d) = elem%f_int(e,n,d) + elem%dHxy_detJ(e,gp,d,n) * elem%sigma (e,gp, d,d)
@@ -289,8 +291,22 @@ __device__ void Domain_d::calcElemForces(){
     }//if e<elem_count
 }
 
- 
+  __global__ void calcElemForcesKernel(Domain_d *dom_d){
+		
+		dom_d->calcElemForces();
+}
 
+__device__ void Domain_d::calcElemPressure(){
+
+  int e = threadIdx.x + blockDim.x*blockIdx.x;  
+  if (e < m_elem_count) {
+    double press_inc = 0.0;
+    for (int gp=0;gp<m_gp_count;gp++){
+      for (int d = 0; d<m_dim;d++){
+        press_inc += getStrRate(e,gp,d,d); // TODO: TRACE
+      }
+    }//gauss point
+    press_inc = -press_inc/m_gp_count;
 // subroutine calc_elem_pressure_from_strain (modK)
   // implicit none
   // real(fp_kind), intent(in) :: modK
@@ -314,5 +330,7 @@ __device__ void Domain_d::calcElemForces(){
     // ! print *, "elem%pressure(e,gp) FROM STRAIN", elem%pressure(e,1)
   // end do
 // end subroutine 
-  
+  } // e< elem_count
+}
+ 
 }; //Namespace MetFEM

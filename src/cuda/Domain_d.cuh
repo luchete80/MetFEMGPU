@@ -19,6 +19,7 @@ public:
 
 	__device__ void calcElemStrains();
   __device__ void calcElemForces();
+  __device__ void calcElemPressure(); //FROM STRAIN
 
   __device__ void assemblyForces();
   
@@ -29,7 +30,8 @@ public:
 	const int & getElemCount()const{return m_elem_count;}
 	const int & getNodeCount()const{return m_node_count;}
   
-  inline __device__ double & getSigma(const int &e, const int &gp, const int &i, const int &j){if (j<m_dim) return m_sigma[e*m_gp_count*6 + symm_idx[i][j]];}
+  inline __device__ double & getSigma  (const int &e, const int &gp, const int &i, const int &j){if (j<m_dim) return m_sigma   [e*m_gp_count*6 + symm_idx[i][j]];}
+  inline __device__ double & getStrRate(const int &e, const int &gp, const int &i, const int &j){if (j<m_dim) return m_str_rate[e*m_gp_count*6 + symm_idx[i][j]];}
 	
   //__device__ double3 & getVElem(const int &e, const int &n){return v[m_elnod[e*m_nodxelem+n]];}
   inline __device__ double  getVElem(const int &e, const int &n,const int &d){return v[m_elnod[n]+d];}  
@@ -90,6 +92,8 @@ __global__ void calcElemJAndDerivKernel(Domain_d *dom_d);
 __global__ void calcElemStrainsKernel(Domain_d *dom_d);
 
 __global__ void assemblyForcesKernel(Domain_d *dom_d);
+
+__global__ void calcElemForcesKernel (Domain_d *);
 
 inline __device__ double & Domain_d::getDerivative(const int &e, const int &gp, const int &i, const int &j){ //I AND J ARE: DIMENSION AND NODE
       if (i == 0)     return m_dH_detJ_dx[e*(m_nodxelem * m_gp_count) + gp * m_gp_count + i];
