@@ -191,10 +191,10 @@ void Domain_d::AddBoxLength(double3 const & V, double3 const & L, const double &
       } 
 
 		}//if dim 
-		
-		cudaMemcpy(this->m_elnod, elnod_h, sizeof(double) * m_elem_count * m_nodxelem, cudaMemcpyHostToDevice);    
+
+    cudaMalloc((void **)&m_elnod, m_elem_count * m_nodxelem * sizeof (int));		
+		cudaMemcpy(this->m_elnod, elnod_h, sizeof(unsigned int) * m_elem_count * m_nodxelem, cudaMemcpyHostToDevice);    
     
-    cudaMalloc((void **)&m_elnod, m_elem_count * m_nodxelem * sizeof (int));
     cudaMalloc(&m_jacob,m_elem_count * sizeof(Matrix ));
     
     // call AllocateDomain()
@@ -256,7 +256,7 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
    Matrix *x2 = new Matrix(m_nodxelem, m_dim);
 
    
-   printf("Jacob\n");jacob->Print();
+   // printf("Jacob\n");jacob->Print();
    double gpc[8][3];
 
 	printf ("Matrices created\n");
@@ -361,7 +361,7 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           printf("jacob\n");jacob->Print();
           // jacob->Print();
           //printf("Jacobian: \n");jacob->Print();
-           printf("dHrs\n"); dHrs->Print();
+          printf("dHrs\n"); dHrs->Print();
            
           InvMat(*jacob, inv_j);
           printf("inv j\n");inv_j->Print();
