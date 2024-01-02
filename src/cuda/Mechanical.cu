@@ -176,6 +176,9 @@ __device__ void Domain_d::calcElemStrains(){
       str_rate->ToFlatSymPtr(m_str_rate, offset);
       rot_rate->ToFlatSymPtr(m_rot_rate, offset);
       
+      printf("Strain Rate\n");
+      str_rate->Print();
+      
       // !elem%str_rate(e,gp,:,:) = matmul(elem%bl(e,gp,:,:),elem%vele (e,:,:)) 
       // !print *, "simlpified strain rate "
 
@@ -194,7 +197,7 @@ __device__ void Domain_d::calcElemStrains(){
       } // Gauss Point
     }//if e<elem_count
     
-    delete str_rate;
+    delete str_rate,rot_rate;
   } //calcElemStrains
   
   __global__ void calcElemStrainsKernel(Domain_d *dom_d){

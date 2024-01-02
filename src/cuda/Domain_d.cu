@@ -367,8 +367,10 @@ __device__ void Domain_d::calcElemJAndDerivatives () {
           printf("inv j\n");inv_j->Print();
           MatMul(*inv_j,*dHrs,dHxy_detJ_loc);
           
-          m_detJ[offset + m_gp_count * gp] = jacob->calcDet();
+          //setDerivative(dHxy_detJ_loc
           
+          m_detJ[offset + m_gp_count * gp] = jacob->calcDet();
+          printf("det J %f\n",m_detJ[offset + m_gp_count * gp]);
           //TRY WITHOUT ALLOCATING
           
           // invJ = adj(elem%jacob(e,gp,:,:))!!!!/elem%detJ(e,gp) !!!! ALREADY CALCULATED    

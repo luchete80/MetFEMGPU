@@ -17,8 +17,8 @@ namespace MetFEM{
 	calcElemJAndDerivKernel<<<blocksPerGrid,threadsPerBlock >>>(this);
 	cudaDeviceSynchronize(); 
   
-  // calcElemStrainsKernel<<<blocksPerGrid,threadsPerBlock >>>(this);
-	// cudaDeviceSynchronize(); 
+  calcElemStrainsKernel<<<blocksPerGrid,threadsPerBlock >>>(this);
+	cudaDeviceSynchronize(); 
 
   // calcElemPressureKernel<<<blocksPerGrid,threadsPerBlock >>>(this);
   // cudaDeviceSynchronize();   
