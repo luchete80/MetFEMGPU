@@ -33,7 +33,7 @@ int main(){
 	report_gpu_mem();
 		
 	double3 V = make_double3(0.0,0.0,0.0);
-	double3 L = make_double3(0.1,0.1,0.1);
+	double3 L = make_double3(0.1,0.1,0.1);  
 	double r = 0.05;
 	
 	dom_d->AddBoxLength(V,L,r);
@@ -48,15 +48,17 @@ int main(){
   // cout << "Mat type  "<<mattype<<endl;
 
   Material_ *material_h;
+  double Ep, c[6];
   // MATERIAL
-  //TODO: MATERIALS SHOULD BE A VECTOR   
+  //TODO: MATERIALS SHOULD BE A VECTOR
+  
   string mattype = "Bilinear";
   if      (mattype == "Bilinear")    {
     Ep = E*c[0]/(E-c[0]);		                              //only constant is tangent modulus
     material_h  = new Bilinear(Ep);
     cout << "Material Constants, Et: "<<c[0]<<endl;
-    cudaMalloc((void**)&dom_d->materials, 1 * sizeof(Bilinear )); //
-    cudaMemcpy(dom_d->materials, material_h, 1 * sizeof(Bilinear), cudaMemcpyHostToDevice);	
+    // cudaMalloc((void**)&dom_d->materials, 1 * sizeof(Bilinear )); //
+    // cudaMemcpy(dom_d->materials, material_h, 1 * sizeof(Bilinear), cudaMemcpyHostToDevice);	
   } 
   // else if (mattype == "Hollomon")    {
     // // material_h  = new Hollomon(el,Fy,c[0],c[1]);

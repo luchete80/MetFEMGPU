@@ -448,5 +448,11 @@ __device__ void Domain_d::calcElemPressure(){
 
 	// }//particle count
 // }
+
+  __global__ void calcElemPressureKernel(Domain_d *dom_d){
+		
+		dom_d->calcElemPressure();
+}
+
  
 }; //Namespace MetFEM

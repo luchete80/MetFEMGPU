@@ -96,8 +96,8 @@ __global__ void calcElemJAndDerivKernel(Domain_d *dom_d);
 __global__ void calcElemStrainsKernel(Domain_d *dom_d);
 
 __global__ void assemblyForcesKernel(Domain_d *dom_d);
-
 __global__ void calcElemForcesKernel (Domain_d *);
+__global__ void calcElemPressureKernel (Domain_d *);
 
 inline __device__ double & Domain_d::getDerivative(const int &e, const int &gp, const int &i, const int &j){ //I AND J ARE: DIMENSION AND NODE
       if (i == 0)     return m_dH_detJ_dx[e*(m_nodxelem * m_gp_count) + gp * m_gp_count + i];
